@@ -3,7 +3,8 @@ import hashlib
 import xmltodict
 from xml.etree import ElementTree
 import json
-from md5crypt import md5crypt
+
+from resources.lib.md5crypt import md5crypt
 
 class WebshareAPI:
     """
