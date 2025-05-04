@@ -3,7 +3,7 @@ import hashlib
 import xmltodict
 from xml.etree import ElementTree
 import json
-import md5crypt
+from md5crypt import md5crypt
 
 class WebshareAPI:
     """
@@ -37,7 +37,7 @@ class WebshareAPI:
 
     def hash_password(self, password, salt):
         """Creates password hash used by Webshare API"""
-        return hashlib.sha1(md5crypt.md5crypt(password, salt).encode('utf-8')).hexdigest()
+        return hashlib.sha1(md5crypt(password, salt).encode('utf-8')).hexdigest()
 
     def get_salt(self, user_name):
         """Retrieves salt for password hash from webshare.cz"""
