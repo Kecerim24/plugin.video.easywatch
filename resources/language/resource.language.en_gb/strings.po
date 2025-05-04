@@ -1,0 +1,45 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: plugin.video.kodisimplestream\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-03-19 12:00+0000\n"
+"PO-Revision-Date: 2024-03-19 12:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: en_gb\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "#30001"
+msgid "Search"
+msgstr "Search"
+
+msgctxt "#30002"
+msgid "Searching for: {}"
+msgstr "Searching for: {}"
+
+msgctxt "#30003"
+msgid "Username"
+msgstr "Username"
+
+msgctxt "#30004"
+msgid "Password"
+msgstr "Password"
+
+msgctxt "#30006"
+msgid "Login error: {}"
+msgstr "Login error: {}"
+
+msgctxt "#30007"
+msgid "Search error: {}"
+msgstr "Search error: {}"
+
+msgctxt "#30008"
+msgid "Not Found"
+msgstr  "Not Found"
+
+msgctxt "#30010"
+msgid "Webshare Settings"
+msgstr "Webshare Settings" 

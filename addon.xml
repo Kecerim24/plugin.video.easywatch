@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.video.kodisimplestream"
+version="0.2.4"
+name="kodisimplestream"
+provider-name="kecerim">
+<requires>
+  <import addon="xbmc.python" version="3.0.0"/>
+  <import addon="script.module.requests" version="2.31.0"/>
+  <import addon="script.module.xmltodict" version="0.12.0+matrix.2"/>
+</requires>
+<extension point="xbmc.python.pluginsource" library="kodisimplestream.py">
+  <provides>video</provides>
+</extension>
+<extension point="xbmc.addon.metadata">
+  <summary lang="cs">KodiSimpleStream - Kodi plugin pro Webshare.cz</summary>
+  <description lang="cs_CZ">Jednoduchý Kodi plugin pro přehrávání videí z Webshare.cz. Pro více informací navštivte https://github.com/Kecerim24/plugin.video.kodisimplestream</description>
+  <platform>all</platform>
+  <settings>
+    <setting id="username" type="text" label="Username" default="" />
+    <setting id="password" type="text" label="Password" option="hidden" default="" />
+  </settings>
+</extension>
+</addon>
