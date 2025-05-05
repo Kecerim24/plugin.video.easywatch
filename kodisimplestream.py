@@ -284,8 +284,7 @@ def list_episodes(csfd_id, season_id, series_title):
     
     for episode in episodes:
         list_item = xbmcgui.ListItem(label=f"{episode['number']}. {episode['title']}")
-        url = get_url(action='search_webshare', 
-                     query=f"{series_title} S{episode['season']}E{episode['number']}")
+        url = get_url(action='list_search_results', query=f"{series_title} S{episode['season']}E{episode['number']}")
         xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
     
     xbmcplugin.endOfDirectory(_handle)
