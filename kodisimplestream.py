@@ -205,7 +205,7 @@ def list_csfd_results(results, search_type):
     """
     for result in results:
         # Create a list item with the video title
-        list_item = xbmcgui.ListItem(label=result['title'])
+        list_item = xbmcgui.ListItem(label=f"{result['title']} ({result.get('year')})")
         
         # Set additional info for the list item
         list_item.setInfo('video', {
@@ -283,7 +283,7 @@ def list_episodes(csfd_id, season_id, series_title):
     episodes = csfd.get_episodes(csfd_id, season_id)
     
     for episode in episodes:
-        list_item = xbmcgui.ListItem(label=f"Episode {episode['number']}")
+        list_item = xbmcgui.ListItem(label=f"{episode['number']}. {episode['title']}")
         url = get_url(action='search_webshare', 
                      query=f"{series_title} S{episode['season']}E{episode['number']}")
         xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)

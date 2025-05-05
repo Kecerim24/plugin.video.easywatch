@@ -128,18 +128,131 @@ class CSFD:
         return results
     
     def get_seasons(self, full_id):
+        """
+        Get list of seasons for a series.
+        
+        :param full_id: CSFD ID of the series
+        :type full_id: str
+        :return: List of seasons with their details
+        :rtype: list
+        """
         url = f"{self.base_url}/film/{full_id}/prehled"
         headers = {
             "User-Agent": random.choice(self.USER_AGENTS)
         }
-        # TODO: Implement
+        response = requests.get(url, headers=headers)
+        if 600 > response.status_code >= 400:
+            raise Exception(f"Failed to get seasons for {full_id}\nStatus code: {response.status_code}\nResponse: {response.text}")
+        
+        soup = BeautifulSoup(response.text.encode('utf-8'), "html.parser")
+        
+        seasons = []
+        episodes_list = soup.find('div', class_='film-episodes-list')
+        
+        if episodes_list:
+            for season_elem in episodes_list.find_all('li'):
+                # Get season title and link
+                title_elem = season_elem.find('a', class_='film-title-name')
+                if not title_elem:
+                    continue
+                    
+                # Extract season number from title (e.g., "Season 1" -> 1)
+                season_title = title_elem.text.strip()
+                season_number = int(season_title.split()[-1])
+                
+                # Get season ID from href
+                href = title_elem.get('href', '')
+                season_id = href.split('/')[-2] if href else None
+                
+                # Get year and episode count from info
+                info_elem = season_elem.find('span', class_='film-title-info')
+                year = None
+                episode_count = None
+                
+                if info_elem:
+                    # Extract year
+                    year_match = re.search(r'\((\d{4})\)', info_elem.text)
+                    if year_match:
+                        year = year_match.group(1)
+                    
+                    # Extract episode count
+                    episode_match = re.search(r'(\d+)\s+epizod', info_elem.text)
+                    if episode_match:
+                        episode_count = int(episode_match.group(1))
+                
+                seasons.append({
+                    'id': season_id,
+                    'number': season_number,
+                    'title': season_title,
+                    'year': year,
+                    'episode_count': episode_count
+                })
+        
+        # Sort seasons by number
+        seasons.sort(key=lambda x: x['number'])
+        return seasons
 
     def get_episodes(self, full_id, season_id):
+        """
+        Get list of episodes for a season.
+        
+        :param full_id: CSFD ID of the series
+        :type full_id: str
+        :param season_id: Season ID
+        :type season_id: str
+        :return: List of episodes with their details
+        :rtype: list
+        """
         url = f"{self.base_url}/film/{full_id}/{season_id}/prehled"
         headers = {
             "User-Agent": random.choice(self.USER_AGENTS)
         }
-        # TODO: Implement
+        response = requests.get(url, headers=headers)
+        if 600 > response.status_code >= 400:
+            raise Exception(f"Failed to get episodes for {full_id}/{season_id}\nStatus code: {response.status_code}\nResponse: {response.text}")
+        
+        soup = BeautifulSoup(response.text.encode('utf-8'), "html.parser")
+        
+        episodes = []
+        episodes_list = soup.find('div', class_='film-episodes-list')
+        
+        if episodes_list:
+            for episode_elem in episodes_list.find_all('li'):
+                # Get episode title and link
+                title_elem = episode_elem.find('a', class_='film-title-name')
+                if not title_elem:
+                    continue
+                    
+                episode_title = title_elem.text.strip()
+                
+                # Get episode ID from href
+                href = title_elem.get('href', '')
+                episode_id = href.split('/')[-2] if href else None
+                
+                # Get season and episode numbers from info
+                info_elem = episode_elem.find('span', class_='film-title-info')
+                season_number = None
+                episode_number = None
+                
+                if info_elem:
+                    # Extract season and episode numbers from format (S01E01)
+                    episode_info = info_elem.find('span', class_='info')
+                    if episode_info:
+                        match = re.search(r'S(\d+)E(\d+)', episode_info.text)
+                        if match:
+                            season_number = int(match.group(1))
+                            episode_number = int(match.group(2))
+                
+                episodes.append({
+                    'id': episode_id,
+                    'title': episode_title,
+                    'season': season_number,
+                    'number': episode_number
+                })
+        
+        # Sort episodes by number
+        episodes.sort(key=lambda x: x['number'])
+        return episodes
 
 if __name__ == "__main__":
     csfd = CSFD()
