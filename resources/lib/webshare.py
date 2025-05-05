@@ -53,18 +53,12 @@ class WebshareAPI:
                     root.find('message').text)
         return root.find('salt').text
 
-    def get_download_link(self, file_id):
-        """Query actual download link from {file_id}"""
+    def get_download_link(self, file_id) -> str:
+        """Query actual download link from {file_id}, returning empty string if no link is found"""
         url = self._base_url + 'file_link/'
         data = {'ident' : file_id, 'wst' : self._token}
         response = requests.post(url, data=data, headers=self._headers)
-        assert response.status_code == 200
         root = ElementTree.fromstring(response.content)
-        #assert root.find('status').text == 'OK', 'Return code was not OK, debug info: status: {}, code: {}, message: {}'.format(
-        #            root.find('status').text, 
-        #            root.find('code').text, 
-        #            root.find('message').text)
-
         return root.find('link').text if root.find('link') is not None else ''
     
     def search(self, query: str, limit: int = 30, offset: int = 0, sort: str = '', category: str = 'video'):

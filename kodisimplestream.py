@@ -53,11 +53,17 @@ def get_api():
         except AssertionError as e:
             xbmcgui.Dialog().notification(
                 _addon.getAddonInfo('name'),
-                _addon.getLocalizedString(30006).format(str(e)),
+                _addon.getLocalizedString(30009),
                 xbmcgui.NOTIFICATION_ERROR,
                 5000
             )
-    
+    else:
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo('name'),
+            _addon.getLocalizedString(30006).format(str(e)),
+            xbmcgui.NOTIFICATION_ERROR,
+            5000
+        )
     return None
 
 def list_categories():
@@ -140,7 +146,7 @@ def list_search_results(search_term):
             xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=False)
         
         # Add a sort method for the virtual folder items
-        xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_SIZE)
+        xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_NONE)
         
         # Set content type to videos
         xbmcplugin.setContent(_handle, 'videos')

@@ -40,6 +40,10 @@ msgctxt "#30008"
 msgid "Not Found"
 msgstr  "Nenalezeno"
 
+msgctxt "#30009"
+msgid "No credentials"
+msgstr  "V Nastavení addonu se přihlašte do Webshare.cz"
+
 msgctxt "#30010"
 msgid "Webshare Settings"
 msgstr "Nastavení Webshare" 
