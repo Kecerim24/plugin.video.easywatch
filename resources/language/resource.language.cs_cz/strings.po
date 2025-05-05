@@ -46,4 +46,24 @@ msgstr  "V Nastavení addonu se přihlašte do Webshare.cz"
 
 msgctxt "#30010"
 msgid "Webshare Settings"
-msgstr "Nastavení Webshare" 
+msgstr "Nastavení Webshare"
+
+msgctxt "#30011"
+msgid "Search Webshare"
+msgstr "Hledat na Webshare"
+
+msgctxt "#30012"
+msgid "Search CSFD Movies"
+msgstr "Hledat filmy na CSFD"
+
+msgctxt "#30013"
+msgid "Search CSFD Series"
+msgstr "Hledat seriály na CSFD"
+
+msgctxt "#30014"
+msgid "Enter movie title to search on CSFD"
+msgstr "Zadejte název filmu pro vyhledání na CSFD"
+
+msgctxt "#30015"
+msgid "Enter series title to search on CSFD"
+msgstr "Zadejte název seriálu pro vyhledání na CSFD" 

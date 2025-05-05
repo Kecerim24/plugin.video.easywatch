@@ -46,4 +46,24 @@ msgstr  "Login to Webshare.cz in addon settings"
 
 msgctxt "#30010"
 msgid "Webshare Settings"
-msgstr "Webshare Settings" 
+msgstr "Webshare Settings"
+
+msgctxt "#30011"
+msgid "Search Webshare"
+msgstr "Search Webshare"
+
+msgctxt "#30012"
+msgid "Search CSFD Movies"
+msgstr "Search CSFD Movies"
+
+msgctxt "#30013"
+msgid "Search CSFD Series"
+msgstr "Search CSFD Series"
+
+msgctxt "#30014"
+msgid "Enter movie title to search on CSFD"
+msgstr "Enter movie title to search on CSFD"
+
+msgctxt "#30015"
+msgid "Enter series title to search on CSFD"
+msgstr "Enter series title to search on CSFD" 

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.video.kodisimplestream"
-version="0.2.7"
+version="0.3.0"
 name="kodisimplestream"
 provider-name="kecerim">
 <requires>
   <import addon="xbmc.python" version="3.0.0"/>
   <import addon="script.module.requests" version="2.31.0"/>
   <import addon="script.module.xmltodict" version="0.12.0+matrix.2"/>
+  <import addon="script.module.beautifulsoup4" version="4.12.2"/>
 </requires>
 <extension point="xbmc.python.pluginsource" library="kodisimplestream.py">
   <provides>video</provides>
