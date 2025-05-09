@@ -372,6 +372,8 @@ def router(paramstring):
             handle_csfd_selection(params['csfd_id'], params['search_type'])
         elif params['action'] == 'list_episodes':
             list_episodes(params['csfd_id'], params['season_id'], params['series_title'])
+        elif params['action'] == 'list_search_results':
+            list_search_results(params['query'])
         else:
             raise ValueError('Invalid paramstring: {0}!'.format(paramstring))
     else:
