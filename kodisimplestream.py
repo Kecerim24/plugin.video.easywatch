@@ -15,6 +15,7 @@ import xbmc
 
 from resources.lib.webshare import WebshareAPI
 from resources.lib.csfd import CSFD
+from typing import List
 
 _url = sys.argv[0]
 _handle = int(sys.argv[1])
@@ -107,7 +108,7 @@ def play_video(path):
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
 
-def list_search_results(search_terms: list[str]):
+def list_search_results(search_terms: List[str]):
     """
     Display search results from WebshareAPI.
     
