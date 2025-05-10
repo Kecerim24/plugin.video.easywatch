@@ -107,7 +107,7 @@ def play_video(path):
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
 
-def list_search_results(*search_terms):
+def list_search_results(search_terms: list[str]):
     """
     Display search results from WebshareAPI.
     
@@ -248,7 +248,7 @@ def handle_csfd_selection(csfd_id, search_type):
         search_terms.append(f"{details['title']} {details['year']}")
         if details['original_title'] and details['original_title'] != details['title']:
             search_terms.append(details['original_title'])
-        list_search_results(*search_terms)
+        list_search_results(search_terms)
     else:
         # For series, show seasons
         seasons = csfd.get_seasons(csfd_id)
@@ -290,7 +290,7 @@ def list_episodes(csfd_id, season_id, series_title, original_title):
     
     for episode in episodes:
         query = [f"{series_title} S{episode['season']}E{episode['number']}"]
-        if original_title:
+        if original_title and original_title != series_title:
             query.append(f"{original_title} S{episode['season']}E{episode['number']}")
         list_item = xbmcgui.ListItem(label=f"{episode['number']}. {episode['title']}")
         url = get_url(action='list_search_results', query=query)
