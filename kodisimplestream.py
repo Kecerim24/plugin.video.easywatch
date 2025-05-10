@@ -383,7 +383,7 @@ def router(paramstring):
         elif params['action'] == 'select_csfd':
             handle_csfd_selection(params['csfd_id'], params['search_type'])
         elif params['action'] == 'list_episodes':
-            list_episodes(params['csfd_id'], params['season_id'], params['series_title'])
+            list_episodes(params['csfd_id'], params['season_id'], params['series_title'], params['original_title'])
         elif params['action'] == 'list_search_results':
             list_search_results(params['query'])
         else:
