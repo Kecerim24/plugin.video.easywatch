@@ -70,8 +70,17 @@ class CSFD:
             genre_links = genres_elem.find_all('a')
             genres = [g.text.strip() for g in genre_links]
 
+        # Extract original title if not Czech
+        original_title = None
+        if origin_elem and 'Česko' not in origin_elem.text:
+            film_names = soup.find('ul', {'class': 'film-names'})
+            if film_names:
+                first_name = film_names.find('li')
+                if first_name:
+                    original_title = first_name.text.strip()
         return {
             'title': title,
+            'original_title': original_title,
             'year': year,
             'rating': rating,
             'genres': genres,

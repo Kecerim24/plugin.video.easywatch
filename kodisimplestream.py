@@ -107,7 +107,7 @@ def play_video(path):
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
 
-def list_search_results(search_term):
+def list_search_results(*search_terms):
     """
     Display search results from WebshareAPI.
     
@@ -119,43 +119,44 @@ def list_search_results(search_term):
         return
         
     try:
-        results: dict = api.search(search_term)['response']
-        
-        if results['total'] == 0:
-            xbmcgui.Dialog().notification(
-                _addon.getAddonInfo('name'),
-                _addon.getLocalizedString(30007).format(_addon.getLocalizedString(30008)),
-                xbmcgui.NOTIFICATION_ERROR,
-                5000
-            )
-            return
-        # Add each result to the directory
-        for result in results['file']:
-            # Create a list item with the video title
-            list_item = xbmcgui.ListItem(label=result['name'])
+        for search_term in search_terms:
+            results = api.search(search_term)['response']
             
-            # Set additional info for the list item using InfoTagVideo
-            list_item.setInfo('video', {
-                'title': result.get('name', search_term),
-                'size': result.get('size', 0)
-            })
-                        
-            # Set art (poster, fanart, etc.)
-            list_item.setArt({
-                'poster': result.get('img', ''),
-                'fanart': result.get('img', '')
-            })
-            
-            # Set the video URL
-            url = get_url(action='play', video=api.get_download_link(result['ident']))
-            if not url:
+            if results['total'] == 0:
+                xbmcgui.Dialog().notification(
+                    _addon.getAddonInfo('name'),
+                    _addon.getLocalizedString(30007).format(_addon.getLocalizedString(30008)),
+                    xbmcgui.NOTIFICATION_ERROR,
+                    5000
+                )
                 continue
-            
-            # Set the item as playable
-            list_item.setProperty('IsPlayable', 'true')
-            
-            # Add the item to the directory
-            xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=False)
+            # Add each result to the directory
+            for result in results['file']:
+                # Create a list item with the video title
+                list_item = xbmcgui.ListItem(label=result['name'])
+                
+                # Set additional info for the list item using InfoTagVideo
+                list_item.setInfo('video', {
+                    'title': result.get('name', search_term),
+                    'size': result.get('size', 0)
+                })
+                            
+                # Set art (poster, fanart, etc.)
+                list_item.setArt({
+                    'poster': result.get('img', ''),
+                    'fanart': result.get('img', '')
+                })
+                
+                # Set the video URL
+                url = get_url(action='play', video=api.get_download_link(result['ident']))
+                if not url:
+                    continue
+                
+                # Set the item as playable
+                list_item.setProperty('IsPlayable', 'true')
+                
+                # Add the item to the directory
+                xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=False)
         
         # Add a sort method for the virtual folder items
         xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_NONE)
@@ -242,15 +243,18 @@ def handle_csfd_selection(csfd_id, search_type):
     details = csfd.get_detail(csfd_id)
     
     if search_type == 'movie':
+        search_terms = []
         # For movies, search Webshare with title and year
-        search_term = f"{details['title']} {details['year']}"
-        list_search_results(search_term)
+        search_terms.append(f"{details['title']} {details['year']}")
+        if details['original_title'] and details['original_title'] != details['title']:
+            search_terms.append(details['original_title'])
+        list_search_results(*search_terms)
     else:
         # For series, show seasons
         seasons = csfd.get_seasons(csfd_id)
-        list_seasons(seasons, details['title'], csfd_id)
+        list_seasons(seasons, details['title'], details['original_title'], csfd_id)
 
-def list_seasons(seasons, series_title, csfd_id):
+def list_seasons(seasons, series_title, original_title, csfd_id):
     """
     Display list of seasons for a series.
     
@@ -263,12 +267,12 @@ def list_seasons(seasons, series_title, csfd_id):
     """
     for season in seasons:
         list_item = xbmcgui.ListItem(label=f"Season {season['number']}")
-        url = get_url(action='list_episodes', csfd_id=csfd_id, season_id=season['id'], series_title=series_title)
+        url = get_url(action='list_episodes', csfd_id=csfd_id, season_id=season['id'], series_title=series_title, original_title=original_title)
         xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
     
     xbmcplugin.endOfDirectory(_handle)
 
-def list_episodes(csfd_id, season_id, series_title):
+def list_episodes(csfd_id, season_id, series_title, original_title):
     """
     Display list of episodes for a season.
     
@@ -278,13 +282,18 @@ def list_episodes(csfd_id, season_id, series_title):
     :type season_id: str
     :param series_title: Title of the series
     :type series_title: str
+    :param original_title: Original title of the series
+    :type original_title: str
     """
     csfd = CSFD()
     episodes = csfd.get_episodes(csfd_id, season_id)
     
     for episode in episodes:
+        query = [f"{series_title} S{episode['season']}E{episode['number']}"]
+        if original_title:
+            query.append(f"{original_title} S{episode['season']}E{episode['number']}")
         list_item = xbmcgui.ListItem(label=f"{episode['number']}. {episode['title']}")
-        url = get_url(action='list_search_results', query=f"{series_title} S{episode['season']}E{episode['number']}")
+        url = get_url(action='list_search_results', query=query)
         xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
     
     xbmcplugin.endOfDirectory(_handle)
