@@ -266,7 +266,10 @@ def list_seasons(seasons, series_title, original_title, csfd_id):
     :type csfd_id: str
     """
     for season in seasons:
-        list_item = xbmcgui.ListItem(label=f"Season {season['number']}")
+        if season['title'] == 'Season':
+            list_item = xbmcgui.ListItem(label=f"Season {season['number']}")
+        else:
+            list_item = xbmcgui.ListItem(label=season['title'])
         url = get_url(action='list_episodes', csfd_id=csfd_id, season_id=season['id'], series_title=series_title, original_title=original_title)
         xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
     

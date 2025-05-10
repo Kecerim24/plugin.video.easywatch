@@ -167,7 +167,10 @@ class CSFD:
                     
                 # Extract season number from title (e.g., "Season 1" -> 1)
                 season_title = title_elem.text.strip()
-                season_number = int(season_title.split()[-1])
+                try:
+                    season_number = int(season_title.split()[-1])
+                except ValueError:
+                    season_number = seasons[-1]['number'] + 1
                 
                 # Get season ID from href
                 href = title_elem.get('href', '')
