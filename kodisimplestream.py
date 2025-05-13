@@ -4,395 +4,359 @@
 # Created on: 28.04.2025
 # License: GPL v.3 https://www.gnu.org/copyleft/gpl.html
 
-import sys
-from urllib.parse import urlencode
-from urllib.parse import parse_qsl
+from __future__ import annotations  # Enables forward references in older Python versions
 
+# Kodi plugin boilerplate and plugin-specific modules
+import ast
+import sys
+from typing import Any, Dict, List, Optional
+from urllib.parse import parse_qsl, urlencode
+
+import xbmc
+import xbmcaddon
 import xbmcgui
 import xbmcplugin
-import xbmcaddon
-import xbmc
 
 from resources.lib.webshare import WebshareAPI
 from resources.lib.csfd import CSFD
 
-_url = sys.argv[0]
-_handle = int(sys.argv[1])
-_addon = xbmcaddon.Addon()
-_api = None
+# ----------------------------------------------------------------------------
+# Global variables – provided by Kodi during plugin initialization
+# ----------------------------------------------------------------------------
+_url: str = sys.argv[0]
+_handle: int = int(sys.argv[1])
+_addon: xbmcaddon.Addon = xbmcaddon.Addon()
+_api: Optional[WebshareAPI] = None
 
-def get_url(**kwargs):
-    """
-    Create a URL for calling the plugin recursively from the given set of keyword arguments.
+# ----------------------------------------------------------------------------
+# Utility functions
+# ----------------------------------------------------------------------------
 
-    :param kwargs: "argument=value" pairs
-    :type kwargs: dict
-    :return: plugin call URL
-    :rtype: str
-    """
-    return '{0}?{1}'.format(_url, urlencode(kwargs))
+def get_url(**kwargs: Any) -> str:
+    """Returns a plugin URL with encoded parameters for recursive calls."""
+    return f"{_url}?{urlencode(kwargs)}"
 
-def get_api():
+def get_api() -> Optional[WebshareAPI]:
     """
-    Get or initialize the WebshareAPI instance with stored credentials.
-    Returns None if login fails.
+    Returns an authenticated instance of WebshareAPI.
+    Shows error notification on failure.
     """
     global _api
-    
+
     if _api is not None:
         return _api
-        
-    # Get credentials from addon settings
-    username = _addon.getSetting('username')
-    password = _addon.getSetting('password')
-    
-    if username and password:
-        try:
-            _api = WebshareAPI()
-            _api.login(username, password)
-            return _api
-        except AssertionError as e:
-            xbmcgui.Dialog().notification(
-                _addon.getAddonInfo('name'),
-                _addon.getLocalizedString(30009),
-                xbmcgui.NOTIFICATION_ERROR,
-                5000
-            )
-    else:
-        xbmcgui.Dialog().notification(
-            _addon.getAddonInfo('name'),
-            _addon.getLocalizedString(30006).format(str(e)),
-            xbmcgui.NOTIFICATION_ERROR,
-            5000
-        )
-    return None
 
-def list_categories():
-    """
-    Create the list of categories in the Kodi interface.
-    """
-    # Add direct Webshare search button
-    search_url = get_url(action='search_webshare')
-    search_item = xbmcgui.ListItem(label=_addon.getLocalizedString(30011))  # "Search Webshare"
-    search_item.setArt({'icon': 'DefaultAddonsSearch.png'})
-    xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
-    
-    # Add CSFD movie search button
-    search_url = get_url(action='search_csfd_movie')
-    search_item = xbmcgui.ListItem(label=_addon.getLocalizedString(30012))  # "Search CSFD Movies"
-    search_item.setArt({'icon': 'DefaultAddonsSearch.png'})
-    xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
-    
-    # Add CSFD series search button
-    search_url = get_url(action='search_csfd_series')
-    search_item = xbmcgui.ListItem(label=_addon.getLocalizedString(30013))  # "Search CSFD Series"
-    search_item.setArt({'icon': 'DefaultAddonsSearch.png'})
-    xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
-    
+    username: str = _addon.getSetting("username")
+    password: str = _addon.getSetting("password")
+
+    if not (username and password):
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo("name"),
+            _addon.getLocalizedString(30006),  # "Please enter username and password…"
+            xbmcgui.NOTIFICATION_ERROR,
+            5000,
+        )
+        return None
+
+    try:
+        _api = WebshareAPI()
+        _api.login(username, password)
+        if not getattr(_api, "_token", ""):
+            raise RuntimeError("Webshare returned an empty token – check credentials.")
+        return _api
+    except Exception as exc:
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo("name"),
+            _addon.getLocalizedString(30009).format(str(exc)),  # "Login failed…"
+            xbmcgui.NOTIFICATION_ERROR,
+            5000,
+        )
+        return None
+
+# ----------------------------------------------------------------------------
+# Root menu
+# ----------------------------------------------------------------------------
+
+def list_categories() -> None:
+    """Creates items for the plugin's main menu."""
+    for action, label_id in (
+        ("search_webshare", 30011),
+        ("search_csfd_movie", 30012),
+        ("search_csfd_series", 30013),
+    ):
+        item = xbmcgui.ListItem(label=_addon.getLocalizedString(label_id))
+        item.setArt({"icon": "DefaultAddonsSearch.png"})
+        xbmcplugin.addDirectoryItem(_handle, get_url(action=action), item, isFolder=True)
+
     xbmcplugin.endOfDirectory(_handle)
 
-def list_videos(category):
-   pass
+# ----------------------------------------------------------------------------
+# Playback
+# ----------------------------------------------------------------------------
 
-def play_video(path):
+def play_video(path: str) -> None:
+    """Passes the video URL to Kodi’s internal player."""
+    xbmcplugin.setResolvedUrl(_handle, True, xbmcgui.ListItem(path=path))
+
+# ----------------------------------------------------------------------------
+# Webshare: search & listing
+# ----------------------------------------------------------------------------
+
+def list_search_results(search_terms: List[str]) -> None:
     """
-    Play a video by the provided path.
-
-    :param path: Fully-qualified video URL
-    :type path: str
-    """
-    # Create a playable item with a path to play.
-    play_item = xbmcgui.ListItem(path=path)
-    # Pass the item to the Kodi player.
-    xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
-
-
-def list_search_results(search_terms: list[str]):
-    """
-    Display search results from WebshareAPI.
-    
-    :param search_term: The term to search for
-    :type search_term: str
+    Displays search results for a list of search terms using WebshareAPI.
+    Adds each result as a playable item.
     """
     api = get_api()
     if not api:
         return
-        
+
     try:
-        for search_term in search_terms:
-            results = api.search(search_term)['response']
-            
-            if results['total'] == 0:
+        for term in search_terms:
+            response = api.search(term)["response"]
+            if int(response.get("total", 0)) == 0:
                 xbmcgui.Dialog().notification(
-                    _addon.getAddonInfo('name'),
+                    _addon.getAddonInfo("name"),
                     _addon.getLocalizedString(30007).format(_addon.getLocalizedString(30008)),
                     xbmcgui.NOTIFICATION_ERROR,
-                    5000
+                    5000,
                 )
                 continue
-            # Add each result to the directory
-            for result in results['file']:
-                # Create a list item with the video title
-                list_item = xbmcgui.ListItem(label=result['name'])
-                
-                # Set additional info for the list item using InfoTagVideo
-                list_item.setInfo('video', {
-                    'title': result.get('name', search_term),
-                    'size': result.get('size', 0)
+
+            for file_info in response["file"]:
+                item = xbmcgui.ListItem(label=file_info["name"])
+                item.setInfo("video", {
+                    "title": file_info.get("name", term),
+                    "size": int(file_info.get("size", 0)),
                 })
-                            
-                # Set art (poster, fanart, etc.)
-                list_item.setArt({
-                    'poster': result.get('img', ''),
-                    'fanart': result.get('img', '')
-                })
-                
-                # Set the video URL
-                url = get_url(action='play', video=api.get_download_link(result['ident']))
-                if not url:
+                item.setArt({"poster": file_info.get("img", ""), "fanart": file_info.get("img", "")})
+
+                video_url = api.get_download_link(file_info["ident"])
+                if not video_url:
                     continue
-                
-                # Set the item as playable
-                list_item.setProperty('IsPlayable', 'true')
-                
-                # Add the item to the directory
-                xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=False)
-        
-        # Add a sort method for the virtual folder items
+
+                item.setProperty("IsPlayable", "true")
+                xbmcplugin.addDirectoryItem(_handle, get_url(action="play", video=video_url), item, isFolder=False)
+
         xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_NONE)
-        
-        # Set content type to videos
-        xbmcplugin.setContent(_handle, 'videos')
-        
-        # Finish creating a virtual folder
+        xbmcplugin.setContent(_handle, "videos")
         xbmcplugin.endOfDirectory(_handle)
-    except Exception as e:
+    except Exception as exc:
         xbmcgui.Dialog().notification(
-            _addon.getAddonInfo('name'),
-            _addon.getLocalizedString(30007).format(str(e)),
+            _addon.getAddonInfo("name"),
+            _addon.getLocalizedString(30007).format(str(exc)),
             xbmcgui.NOTIFICATION_ERROR,
-            5000
+            5000,
         )
 
-def search():
-    """
-    Create a search dialog and handle the search request.
-    """
-    # Create a keyboard dialog
-    keyboard = xbmc.Keyboard('', _addon.getLocalizedString(30001))
-    keyboard.doModal()
-    
-    if keyboard.isConfirmed():
-        search_term = keyboard.getText()
-        if search_term:
-            # Show searching notification
-            xbmcgui.Dialog().notification(
-                _addon.getAddonInfo('name'),
-                _addon.getLocalizedString(30002).format(search_term),
-                xbmcgui.NOTIFICATION_INFO,
-                2000
-            )
-            # Display search results
-            list_search_results(search_term)
+# ----------------------------------------------------------------------------
+# Generic input dialog for searching
+# ----------------------------------------------------------------------------
 
-def list_csfd_results(results, search_type):
-    """
-    Display CSFD search results and handle selection.
-    
-    :param results: List of CSFD search results
-    :type results: list
-    :param search_type: Type of search ('movie' or 'series')
-    :type search_type: str
-    """
+def _keyboard_search(label_id: int) -> Optional[str]:
+    """Displays Kodi’s virtual keyboard and returns input text if confirmed."""
+    keyboard = xbmc.Keyboard("", _addon.getLocalizedString(label_id))
+    keyboard.doModal()
+    return keyboard.getText() if keyboard.isConfirmed() else None
+
+# ----------------------------------------------------------------------------
+# Webshare – search dialog entry point
+# ----------------------------------------------------------------------------
+
+def search_webshare() -> None:
+    """Handles interactive Webshare search via on-screen keyboard."""
+    term = _keyboard_search(30001)
+    if term:
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo("name"),
+            _addon.getLocalizedString(30002).format(term),
+            xbmcgui.NOTIFICATION_INFO,
+            2000,
+        )
+        list_search_results([term])
+
+# ----------------------------------------------------------------------------
+# CSFD – search results
+# ----------------------------------------------------------------------------
+
+def list_csfd_results(results: List[Dict[str, Any]], search_type: str) -> None:
+    """Displays CSFD search results as Kodi menu items."""
     for result in results:
-        # Create a list item with the video title
-        list_item = xbmcgui.ListItem(label=f"{result['title']} ({result.get('year')})")
-        
-        # Set additional info for the list item
-        list_item.setInfo('video', {
-            'title': result['title'],
-            'year': result.get('year'),
-            'plot': result.get('plot'),
-            'rating': result.get('rating')
+        title = result["title"]
+        year = result.get("year")
+        label = f"{title} ({year})" if year else title
+
+        item = xbmcgui.ListItem(label=label)
+        item.setInfo("video", {
+            "title": title,
+            "year": year,
+            "plot": result.get("plot"),
+            "rating": result.get("rating"),
         })
-        
-        # Set art
-        list_item.setArt({
-            'poster': result.get('poster', ''),
-            'fanart': result.get('poster', '')
-        })
-        
-        # Create URL with CSFD ID and type
-        url = get_url(action='select_csfd', csfd_id=result['id'], search_type=search_type)
-        
-        # Add the item to the directory
-        xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
-    
+        item.setArt({"poster": result.get("poster", ""), "fanart": result.get("poster", "")})
+
+        url = get_url(action="select_csfd", csfd_id=result["id"], search_type=search_type)
+        xbmcplugin.addDirectoryItem(_handle, url, item, isFolder=True)
+
     xbmcplugin.endOfDirectory(_handle)
 
-def handle_csfd_selection(csfd_id, search_type):
-    """
-    Handle selection of a CSFD result and perform appropriate Webshare search.
-    
-    :param csfd_id: CSFD ID of selected item
-    :type csfd_id: str
-    :param search_type: Type of search ('movie' or 'series')
-    :type search_type: str
-    """
+# ----------------------------------------------------------------------------
+# CSFD – selection and detailed episode listing
+# ----------------------------------------------------------------------------
+
+def handle_csfd_selection(csfd_id: str, search_type: str) -> None:
+    """Handles selection from CSFD and delegates search or episode listing."""
     csfd = CSFD()
     details = csfd.get_detail(csfd_id)
-    
-    if search_type == 'movie':
-        search_terms = []
-        # For movies, search Webshare with title and year
-        search_terms.append(f"{details['title']} {details['year']}")
-        if details['original_title'] and details['original_title'] != details['title']:
-            search_terms.append(details['original_title'])
-        list_search_results(search_terms)
-    else:
-        # For series, show seasons
-        seasons = csfd.get_seasons(csfd_id)
-        list_seasons(seasons, details['title'], details['original_title'], csfd_id)
 
-def list_seasons(seasons, series_title, original_title, csfd_id):
-    """
-    Display list of seasons for a series.
-    
-    :param seasons: List of seasons
-    :type seasons: list
-    :param series_title: Title of the series
-    :type series_title: str
-    :param csfd_id: CSFD ID of the series
-    :type csfd_id: str
-    """
+    if search_type == "movie":
+        queries: List[str] = [f"{details['title']} {details['year']}"]
+        if details.get("original_title") and details["original_title"] != details["title"]:
+            queries.append(details["original_title"])
+        list_search_results(queries)
+        return
+
+    # Series → show list of seasons
+    seasons = csfd.get_seasons(csfd_id)
+    list_seasons(seasons, details["title"], details.get("original_title"), csfd_id)
+
+# ----------------------------------------------------------------------------
+# CSFD – episode navigation
+# ----------------------------------------------------------------------------
+
+def list_seasons(
+    seasons: List[Dict[str, Any]],
+    series_title: str,
+    original_title: Optional[str],
+    csfd_id: str,
+) -> None:
+    """Displays list of seasons for a series."""
     for season in seasons:
-        if season['title'] == 'Season':
-            list_item = xbmcgui.ListItem(label=f"Season {season['number']}")
-        else:
-            list_item = xbmcgui.ListItem(label=season['title'])
-        url = get_url(action='list_episodes', csfd_id=csfd_id, season_id=season['id'], series_title=series_title, original_title=original_title)
-        xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
-    
+        label = season["title"] if season["title"] != "Season" else f"Season {season['number']}"
+        url = get_url(
+            action="list_episodes",
+            csfd_id=csfd_id,
+            season_id=season["id"],
+            series_title=series_title,
+            original_title=original_title or "",
+        )
+        xbmcplugin.addDirectoryItem(_handle, url, xbmcgui.ListItem(label=label), isFolder=True)
+
     xbmcplugin.endOfDirectory(_handle)
 
-def list_episodes(csfd_id, season_id, series_title, original_title):
-    """
-    Display list of episodes for a season.
-    
-    :param csfd_id: CSFD ID of the series
-    :type csfd_id: str
-    :param season_id: Season ID
-    :type season_id: str
-    :param series_title: Title of the series
-    :type series_title: str
-    :param original_title: Original title of the series
-    :type original_title: str
-    """
+def list_episodes(
+    csfd_id: str,
+    season_id: str,
+    series_title: str,
+    original_title: str,
+) -> None:
+    """Displays episode list for a given season."""
     csfd = CSFD()
     episodes = csfd.get_episodes(csfd_id, season_id)
-    
-    for episode in episodes:
-        query = [f"{series_title} S{episode['season']}E{episode['number']}"]
+
+    for ep in episodes:
+        season_no = ep.get("season") or 0
+        ep_no = ep.get("number") or 0
+        label = f"{ep_no}. {ep['title']}"
+
+        queries: List[str] = [f"{series_title} S{season_no:02d}E{ep_no:02d}"]
         if original_title and original_title != series_title:
-            query.append(f"{original_title} S{episode['season']}E{episode['number']}")
-        list_item = xbmcgui.ListItem(label=f"{episode['number']}. {episode['title']}")
-        url = get_url(action='list_search_results', query=query)
-        xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
-    
+            queries.append(f"{original_title} S{season_no:02d}E{ep_no:02d}")
+
+        url = get_url(action="list_search_results", query=str(queries))
+        xbmcplugin.addDirectoryItem(_handle, url, xbmcgui.ListItem(label=label), isFolder=True)
+
     xbmcplugin.endOfDirectory(_handle)
 
-def search_webshare():
-    """
-    Create a search dialog for direct Webshare search.
-    """
-    keyboard = xbmc.Keyboard('', _addon.getLocalizedString(30001))
-    keyboard.doModal()
-    
-    if keyboard.isConfirmed():
-        search_term = keyboard.getText()
-        if search_term:
-            xbmcgui.Dialog().notification(
-                _addon.getAddonInfo('name'),
-                _addon.getLocalizedString(30002).format(search_term),
-                xbmcgui.NOTIFICATION_INFO,
-                2000
-            )
-            list_search_results(search_term)
+# ----------------------------------------------------------------------------
+# CSFD – search entry points
+# ----------------------------------------------------------------------------
 
-def search_csfd_movie():
-    """
-    Create a search dialog for CSFD movie search.
-    """
-    keyboard = xbmc.Keyboard('', _addon.getLocalizedString(30014))  # "Search CSFD Movies"
-    keyboard.doModal()
-    
-    if keyboard.isConfirmed():
-        search_term = keyboard.getText()
-        if search_term:
-            xbmcgui.Dialog().notification(
-                _addon.getAddonInfo('name'),
-                _addon.getLocalizedString(30002).format(search_term),
-                xbmcgui.NOTIFICATION_INFO,
-                2000
-            )
-            csfd = CSFD()
-            results = csfd.search(search_term, type="movie")
-            list_csfd_results(results, 'movie')
+def search_csfd_movie() -> None:
+    """Search dialog for CSFD movie titles."""
+    term = _keyboard_search(30014)
+    if term:
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo("name"),
+            _addon.getLocalizedString(30002).format(term),
+            xbmcgui.NOTIFICATION_INFO,
+            2000,
+        )
+        results = CSFD().search(term, type="movie")
+        list_csfd_results(results, "movie")
 
-def search_csfd_series():
-    """
-    Create a search dialog for CSFD series search.
-    """
-    keyboard = xbmc.Keyboard('', _addon.getLocalizedString(30015))  # "Search CSFD Series"
-    keyboard.doModal()
-    
-    if keyboard.isConfirmed():
-        search_term = keyboard.getText()
-        if search_term:
-            xbmcgui.Dialog().notification(
-                _addon.getAddonInfo('name'),
-                _addon.getLocalizedString(30002).format(search_term),
-                xbmcgui.NOTIFICATION_INFO,
-                2000
-            )
-            csfd = CSFD()
-            results = csfd.search(search_term, type="series")
-            list_csfd_results(results, 'series')
+def search_csfd_series() -> None:
+    """Search dialog for CSFD TV series titles."""
+    term = _keyboard_search(30015)
+    if term:
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo("name"),
+            _addon.getLocalizedString(30002).format(term),
+            xbmcgui.NOTIFICATION_INFO,
+            2000,
+        )
+        results = CSFD().search(term, type="series")
+        list_csfd_results(results, "series")
 
-def router(paramstring):
-    """
-    Router function that calls other functions
-    depending on the provided paramstring
+# ----------------------------------------------------------------------------
+# Placeholder for unimplemented features
+# ----------------------------------------------------------------------------
 
-    :param paramstring: URL encoded plugin paramstring
-    :type paramstring: str
-    """
+def list_videos(category: str) -> None:
+    """Stub for future content browsing by category."""
+    xbmcgui.Dialog().notification(
+        _addon.getAddonInfo("name"),
+        _addon.getLocalizedString(30016),  # "This function is not implemented yet."
+        xbmcgui.NOTIFICATION_INFO,
+        3000,
+    )
+
+# ----------------------------------------------------------------------------
+# Routing
+# ----------------------------------------------------------------------------
+
+def router(paramstring: str) -> None:
+    """Dispatches actions based on plugin paramstring."""
     params = dict(parse_qsl(paramstring))
-    
-    if params:
-        if params['action'] == 'listing':
-            list_videos(params['category'])
-        elif params['action'] == 'play':
-            play_video(params['video'])
-        elif params['action'] == 'search_webshare':
-            search_webshare()
-        elif params['action'] == 'search_csfd_movie':
-            search_csfd_movie()
-        elif params['action'] == 'search_csfd_series':
-            search_csfd_series()
-        elif params['action'] == 'select_csfd':
-            handle_csfd_selection(params['csfd_id'], params['search_type'])
-        elif params['action'] == 'list_episodes':
-            list_episodes(params['csfd_id'], params['season_id'], params['series_title'], params['original_title'])
-        elif params['action'] == 'list_search_results':
-            list_search_results(params['query'])
-        else:
-            raise ValueError('Invalid paramstring: {0}!'.format(paramstring))
-    else:
+    action = params.get("action")
+
+    if action is None:
         list_categories()
+        return
 
+    if action == "listing":
+        list_videos(params["category"])
+    elif action == "play":
+        play_video(params["video"])
+    elif action == "search_webshare":
+        search_webshare()
+    elif action == "search_csfd_movie":
+        search_csfd_movie()
+    elif action == "search_csfd_series":
+        search_csfd_series()
+    elif action == "select_csfd":
+        handle_csfd_selection(params["csfd_id"], params["search_type"])
+    elif action == "list_episodes":
+        list_episodes(
+            params["csfd_id"],
+            params["season_id"],
+            params["series_title"],
+            params.get("original_title", ""),
+        )
+    elif action == "list_search_results":
+        raw_query = params["query"]
+        try:
+            query_list = ast.literal_eval(raw_query)
+            if not isinstance(query_list, list):
+                query_list = [raw_query]
+        except (ValueError, SyntaxError):
+            query_list = [raw_query]
+        list_search_results([str(q) for q in query_list])
+    else:
+        raise ValueError(f"Invalid paramstring: {paramstring}!")
 
-if __name__ == '__main__':
-    # Call the router function and pass the plugin call parameters to it.
-    # We use string slicing to trim the leading '?' from the plugin call paramstring
-    router(sys.argv[2][1:])
+# ----------------------------------------------------------------------------
+if __name__ == "__main__":
+    # Kodi passes plugin parameters in `sys.argv[2]`, including the leading '?'
+    # This may be missing during CLI testing – handle gracefully.
+    router(sys.argv[2][1:] if len(sys.argv) > 2 and sys.argv[2].startswith("?") else "")

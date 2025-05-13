@@ -61,7 +61,7 @@ class WebshareAPI:
         root = ElementTree.fromstring(response.content)
         return root.find('link').text if root.find('link') is not None else ''
     
-    def search(self, query: str, limit: int = 10, offset: int = 0, sort: str = 'largest', category: str = 'video'):
+    def search(self, query: str, limit: int = 30, offset: int = 0, sort: str = 'rating', category: str = 'video'):
         """Search for videos on webshare.cz
         query: str - search query
         limit: int - number of results to return
