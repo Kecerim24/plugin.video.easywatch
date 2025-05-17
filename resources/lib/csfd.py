@@ -211,6 +211,7 @@ class CSFD:
                 
                 seasons.append(Season(
                     csfd_id=season_id,
+                    series_id=full_id,
                     number=season_number,
                     title=season_title,
                     year=year

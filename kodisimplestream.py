@@ -82,13 +82,13 @@ def list_categories():
     xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
     
     # Add CSFD movie search button
-    search_url = get_url(action='search_csfd_movie')
+    search_url = get_url(action='search_movie')
     search_item = xbmcgui.ListItem(label=_addon.getLocalizedString(30012))  # "Search CSFD Movies"
     search_item.setArt({'icon': 'DefaultAddonsSearch.png'})
     xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
     
     # Add CSFD series search button
-    search_url = get_url(action='search_csfd_series')
+    search_url = get_url(action='search_series')
     search_item = xbmcgui.ListItem(label=_addon.getLocalizedString(30013))  # "Search CSFD Series"
     search_item.setArt({'icon': 'DefaultAddonsSearch.png'})
     xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
@@ -148,7 +148,7 @@ def list_search_results(search_terms: list[str]):
             5000
         )
 
-def search_csfd_movie():
+def search_movie_csfd():
     """
     Create a search dialog for CSFD movie search.
     """
@@ -169,7 +169,18 @@ def search_csfd_movie():
             
             list_movies(results)
 
-def search_csfd_series():
+def search_movie_webshare(query, query_original):
+    """
+    Create a search dialog for Webshare movie search.
+    """
+    search_terms = []
+    search_terms.append(query)
+    if query_original and query_original != query:
+        search_terms.append(query_original)
+    list_search_results(search_terms)
+    
+
+def search_series_csfd():
     """
     Create a search dialog for CSFD series search.
     """
@@ -210,26 +221,48 @@ def list_series(items):
     listing = Listing(items)
     listing.list(get_url, _handle)
 
-def list_seasons(seasons):
+def list_seasons(series_id):
     """
     Display list of seasons for a series.
     
-    :param seasons: List of seasons
-    :type seasons: list
+    :param series_id: Series ID
+    :type series_id: str
     """
+    csfd = CSFD()
+    seasons = csfd.get_seasons(series_id)
+
     listing = Listing(seasons)
     listing.list(get_url, _handle)
 
-def list_episodes(episodes):
+def list_episodes(series_id, season_id):
     """
     Display list of episodes for a season.
     
-    :param episodes: List of episodes
-    :type episodes: list
+    :param season_id: Season ID
+    :type season_id: str
     """
-    episodes = Season.from_dict(episodes).episodes
+    csfd = CSFD()
+    episodes = csfd.get_episodes(series_id, season_id)
+    
     listing = Listing(episodes)
     listing.list(get_url, _handle)
+
+
+def search_episode_webshare(query, query_original):
+    """
+    Search for an episode on Webshare using both query and query_original.
+    
+    :param query: Search query in local language (e.g. "Show Name S01E02")
+    :type query: str
+    :param query_original: Search query in original language (e.g. "Original Show Name S01E02") 
+    :type query_original: str
+    """
+    search_terms = []
+    search_terms.append(query)
+    if query_original and query_original != query:
+        search_terms.append(query_original)
+    list_search_results(search_terms)
+
 
 def play_video(path):
     """
@@ -242,26 +275,6 @@ def play_video(path):
     play_item = xbmcgui.ListItem(path=path)
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
-
-# Handler Functions
-def handle_csfd_selection(search_type, item):
-    """
-    Handle selection of a CSFD result and perform appropriate Webshare search.
-    :param search_type: Type of search ('movie' or 'series')
-    :type search_type: str
-    """
-    if search_type == 'movie':
-        item = Movie.from_dict(item)
-        search_terms = []
-        # For movies, search Webshare with title and year
-        search_terms.append(f"{item.title} {item.year}")
-        if item.original_title and item.original_title != item.title:
-            search_terms.append(item.original_title)
-        list_search_results(search_terms)
-    else:
-        item = Series.from_dict(item)
-        # For series, show seasons
-        list_seasons(item.seasons)
 
 # Router and Main Entry Point
 def router(paramstring):
@@ -279,16 +292,19 @@ def router(paramstring):
             play_video(params['video'])
         elif params['action'] == 'search_webshare':
             search_webshare()
-        elif params['action'] == 'search_csfd_movie':
-            search_csfd_movie()
-        elif params['action'] == 'search_csfd_series':
-            search_csfd_series()   
-        elif params['action'] == 'select_csfd':
-            handle_csfd_selection(params['search_type'], params['item'])
+        elif params['action'] == 'search_movie_csfd':
+            search_movie_csfd()
+        elif params['action'] == 'search_series_csfd':
+            search_series_csfd()   
+        elif params['action'] == 'search_movie_webshare':
+            search_movie_webshare(params['query'], params['query_original'])         
+        elif params['action'] == 'list_seasons':
+            list_seasons(params['series_id'])
         elif params['action'] == 'list_episodes':
-            list_episodes(params['episodes'])
-        elif params['action'] == 'list_search_results':
-            list_search_results(params['query'])
+            list_episodes(params['series_id'], params['season_id'])
+        elif params['action'] == 'search_episode':
+            search_episode_webshare(params['query'], params['query_original'])
+        
         else:
             raise ValueError('Invalid paramstring: {0}!'.format(paramstring))
     else:

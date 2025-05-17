@@ -73,31 +73,6 @@ class Movie:
         self.poster = poster
         self.fanart = fanart
 
-    def to_dict(self) -> dict:
-        return {
-            'csfd_id': self.csfd_id,
-            'title': self.title,
-            'original_title': self.original_title,
-            'year': self.year,
-            'plot': self.plot,
-            'rating': self.rating,
-            'poster': self.poster,
-            'fanart': self.fanart
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> 'Movie':
-        return cls(
-            csfd_id=data['csfd_id'],
-            title=data['title'],
-            original_title=data.get('original_title', ''),
-            year=data.get('year', ''),
-            plot=data.get('plot', ''),
-            rating=data.get('rating', ''),
-            poster=data.get('poster', ''),
-            fanart=data.get('fanart', '')
-        )
-
 class Series:
     def __init__(self, csfd_id: str, title: str, original_title: str = '', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
         self.csfd_id = csfd_id
@@ -108,39 +83,11 @@ class Series:
         self.rating = rating
         self.poster = poster
         self.fanart = fanart
-        self.seasons = []
-
-    def to_dict(self) -> dict:
-        return {
-            'csfd_id': self.csfd_id,
-            'title': self.title,
-            'original_title': self.original_title,
-            'year': self.year,
-            'plot': self.plot,
-            'rating': self.rating,
-            'poster': self.poster,
-            'fanart': self.fanart,
-            'seasons': [season.to_dict() for season in self.seasons]
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> 'Series':
-        series = cls(
-            csfd_id=data['csfd_id'],
-            title=data['title'],
-            original_title=data.get('original_title', ''),
-            year=data.get('year', ''),
-            plot=data.get('plot', ''),
-            rating=data.get('rating', ''),
-            poster=data.get('poster', ''),
-            fanart=data.get('fanart', '')
-        )
-        series.seasons = [Season.from_dict(season_data) for season_data in data.get('seasons', [])]
-        return series
 
 class Season:
-    def __init__(self, csfd_id: str, number: str, title: str = 'Season', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
+    def __init__(self, csfd_id: str, series_id: str, number: str, title: str = 'Season', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
         self.csfd_id = csfd_id
+        self.series_id = series_id
         self.title = title
         self.number = number
         self.year = year
@@ -148,40 +95,14 @@ class Season:
         self.rating = rating
         self.poster = poster
         self.fanart = fanart
-        self.episodes = []
 
-    def to_dict(self) -> dict:
-        return {
-            'csfd_id': self.csfd_id,
-            'title': self.title,
-            'number': self.number,
-            'year': self.year,
-            'plot': self.plot,
-            'rating': self.rating,
-            'poster': self.poster,
-            'fanart': self.fanart,
-            'episodes': [episode.to_dict() for episode in self.episodes]
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> 'Season':
-        season = cls(
-            csfd_id=data['csfd_id'],
-            number=data['number'],
-            title=data.get('title', 'Season'),
-            year=data.get('year', ''),
-            plot=data.get('plot', ''),
-            rating=data.get('rating', ''),
-            poster=data.get('poster', ''),
-            fanart=data.get('fanart', '')
-        )
-        season.episodes = [Episode.from_dict(episode_data) for episode_data in data.get('episodes', [])]
-        return season
-        
 class Episode:
-    def __init__(self, csfd_id: str, title: str, number: str = '', season_number: str = '', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
+    def __init__(self, csfd_id: str, series_title: str, title: str, series_original_title: str = '', original_title: str = '', number: str = '', season_number: str = '', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
         self.csfd_id = csfd_id
+        self.series_title = series_title
+        self.series_original_title = series_original_title
         self.title = title
+        self.original_title = original_title
         self.number = number
         self.season_number = season_number
         self.year = year
@@ -190,32 +111,6 @@ class Episode:
         self.poster = poster
         self.fanart = fanart
 
-    def to_dict(self) -> dict:
-        return {
-            'csfd_id': self.csfd_id,
-            'title': self.title,
-            'number': self.number,
-            'season_number': self.season_number,
-            'year': self.year,
-            'plot': self.plot,
-            'rating': self.rating,
-            'poster': self.poster,
-            'fanart': self.fanart
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> 'Episode':
-        return cls(
-            csfd_id=data['csfd_id'],
-            title=data['title'],
-            number=data.get('number', ''),
-            season_number=data.get('season_number', ''),
-            year=data.get('year', ''),
-            plot=data.get('plot', ''),
-            rating=data.get('rating', ''),
-            poster=data.get('poster', ''),
-            fanart=data.get('fanart', '')
-        )
 
 class Listing:
     def __init__(self, items: List[Union[Movie, Series, Season, Episode]]):
@@ -248,13 +143,13 @@ class Listing:
             
             # Create URL with appropriate action based on item type
             if isinstance(item, Movie):
-                url = get_url(action='select_csfd', search_type='movie', item=item.to_dict())
+                url = get_url(action='search_movie_webshare', query=f"{item.title} {item.year}", query_original=f"{item.original_title} {item.year}")
             elif isinstance(item, Series):
-                url = get_url(action='select_csfd', search_type='series', item=item.to_dict())
+                url = get_url(action='list_seasons', series_id=item.csfd_id)
             elif isinstance(item, Season):
-                url = get_url(action='list_episodes', episodes=item.to_dict())
+                url = get_url(action='list_episodes', series_id=item.series_id, season_id=item.csfd_id)
             elif isinstance(item, Episode):
-                url = get_url(action='list_search_results', query=f"{item.title} S{item.season_number}E{item.number}")
+                url = get_url(action='search_episode_webshare', query=f"{item.series_title} S{item.season_number}E{item.number}", query_original=f"{item.series_original_title} S{item.season_number}E{item.number}")
             
             # Add the item to the directory
             xbmcplugin.addDirectoryItem(handle, url, list_item, isFolder=True)
