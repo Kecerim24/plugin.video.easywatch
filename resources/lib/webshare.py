@@ -4,8 +4,8 @@ import xmltodict
 from xml.etree import ElementTree
 import json
 
-from resources.lib.md5crypt import md5crypt
-from resources.lib.utils import *
+from md5crypt import md5crypt
+from utils import *
 
 class WebshareAPI:
     """
@@ -87,7 +87,7 @@ class WebshareAPI:
         video_list = VideoList()
         
         for file in json_response['response']['file']:
-            video = Video(file['name'], '', file['img'], file['size'], file['ident'])
+            video = Video(file['name'], '', file['img'],file['img'], file['size'], file['ident'])
             video_list.add_video(video)
         return video_list
          
@@ -95,6 +95,4 @@ if __name__ == "__main__":
     # For testing purposes
     webshare = WebshareAPI()
     webshare.login("test", "test")
-    json_search = webshare.search("iron", 5)
-    print(json.dumps(json_search, indent=4))
-    print(webshare.get_download_link(json_search['response']['file'][0]['ident']))
+    webshare.search("Cars", 5)
