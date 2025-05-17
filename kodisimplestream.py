@@ -243,7 +243,7 @@ def play_video(path):
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
 # Handler Functions
-def handle_csfd_selection(search_type, items):
+def handle_csfd_selection(search_type, item):
     """
     Handle selection of a CSFD result and perform appropriate Webshare search.
     :param search_type: Type of search ('movie' or 'series')
@@ -253,13 +253,13 @@ def handle_csfd_selection(search_type, items):
     if search_type == 'movie':
         search_terms = []
         # For movies, search Webshare with title and year
-        search_terms.append(f"{items.title} {items.year}")
-        if items.original_title and items.original_title != items.title:
-            search_terms.append(items.original_title)
+        search_terms.append(f"{item.title} {item.year}")
+        if item.original_title and item.original_title != item.title:
+            search_terms.append(item.original_title)
         list_search_results(search_terms)
     else:
         # For series, show seasons
-        list_seasons(items.seasons)
+        list_seasons(item.seasons)
 
 # Router and Main Entry Point
 def router(paramstring):
@@ -282,7 +282,7 @@ def router(paramstring):
         elif params['action'] == 'search_csfd_series':
             search_csfd_series()   
         elif params['action'] == 'select_csfd':
-            handle_csfd_selection(params['search_type'], params['items'])
+            handle_csfd_selection(params['search_type'], params['item'])
         elif params['action'] == 'list_episodes':
             list_episodes(params['episodes'])
         elif params['action'] == 'list_search_results':
