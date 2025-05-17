@@ -63,9 +63,10 @@ class VideoList:
         xbmcplugin.endOfDirectory(handle)
 
 class Movie:
-    def __init__(self, csfd_id: str, title: str, year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
+    def __init__(self, csfd_id: str, title: str, original_title: str = '', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
         self.csfd_id = csfd_id
         self.title = title
+        self.original_title = original_title
         self.year = year
         self.plot = plot
         self.rating = rating
@@ -73,14 +74,16 @@ class Movie:
         self.fanart = fanart
 
 class Series:
-    def __init__(self, csfd_id: str, title: str, year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
+    def __init__(self, csfd_id: str, title: str, original_title: str = '', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
         self.csfd_id = csfd_id
         self.title = title
+        self.original_title = original_title
         self.year = year
         self.plot = plot
         self.rating = rating
         self.poster = poster
         self.fanart = fanart
+        self.seasons = []
 
 class Season:
     def __init__(self, csfd_id: str, number: str, title: str = 'Season', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
@@ -92,10 +95,10 @@ class Season:
         self.rating = rating
         self.poster = poster
         self.fanart = fanart
-
+        self.episodes = []
         
 class Episode:
-    def __init__(self, csfd_id: str, title: str, number: str, season_number: str, year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
+    def __init__(self, csfd_id: str, title: str, number: str = '', season_number: str = '', year: str = '', plot: str = '', rating: str = '', poster: str = '', fanart: str = ''):
         self.csfd_id = csfd_id
         self.title = title
         self.number = number
@@ -107,8 +110,8 @@ class Episode:
         self.fanart = fanart
 
 class Listing:
-    def __init__(self):
-        self.items: list[Movie | Series | Season | Episode] = []
+    def __init__(self, items: List[Union[Movie, Series, Season, Episode]]):
+        self.items = items
 
     def list(self, get_url, handle) -> None:
         for item in self.items:
@@ -137,13 +140,13 @@ class Listing:
             
             # Create URL with appropriate action based on item type
             if isinstance(item, Movie):
-                url = get_url(action='select_csfd', csfd_id=item.csfd_id, search_type='movie')
+                url = get_url(action='select_csfd', csfd_id=item.csfd_id, search_type='movie', items=self.items)
             elif isinstance(item, Series):
-                url = get_url(action='select_csfd', csfd_id=item.csfd_id, search_type='series')
+                url = get_url(action='select_csfd', csfd_id=item.csfd_id, search_type='series', items=self.items)
             elif isinstance(item, Season):
-                url = get_url(action='list_episodes', csfd_id=item.csfd_id, season_id=item.number)
+                url = get_url(action='list_episodes', csfd_id=item.csfd_id, season_id=item.number, items=self.items)
             elif isinstance(item, Episode):
-                url = get_url(action='list_search_results', query=f"{item.title} S{item.season_number}E{item.number}")
+                url = get_url(action='list_search_results', query=f"{item.title} S{item.season_number}E{item.number}", items=self.items)
             
             # Add the item to the directory
             xbmcplugin.addDirectoryItem(handle, url, list_item, isFolder=True)

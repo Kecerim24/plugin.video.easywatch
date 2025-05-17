@@ -65,7 +65,7 @@ class CSFD:
             rating = rating_elem.text.strip()
 
         # Extract original title if not Czech
-        original_title = None
+        original_title = ''
         if origin_elem and 'Česko' not in origin_elem.text:
             film_names = soup.find('ul', {'class': 'film-names'})
             if film_names:
@@ -79,6 +79,7 @@ class CSFD:
         if is_series:
             return Series(
                 title=title,
+                original_title=original_title,
                 year=year,
                 plot=plot,
                 rating=rating,
@@ -88,6 +89,7 @@ class CSFD:
         else:
             return Movie(
                 title=title,
+                original_title=original_title,
                 year=year,
                 plot=plot,
                 rating=rating,
@@ -134,6 +136,15 @@ class CSFD:
                 try:
                     # Get full details for each result
                     result = self.get_detail(full_id)
+                    
+                    # If it's a series, get seasons and episodes
+                    if isinstance(result, Series):
+                        seasons = self.get_seasons(full_id)
+                        for season in seasons:
+                            episodes = self.get_episodes(full_id, season.csfd_id)
+                            season.episodes = episodes
+                        result.seasons = seasons
+                    
                     results.append(result)
                 except Exception as e:
                     print(f"Failed to get details for {full_id}: {str(e)}")
@@ -198,7 +209,7 @@ class CSFD:
                         episode_count = int(episode_match.group(1))
                 
                 seasons.append(Season(
-                    csfd_id=full_id,
+                    csfd_id=season_id,
                     number=season_number,
                     title=season_title,
                     year=year
