@@ -4,8 +4,8 @@ import xmltodict
 from xml.etree import ElementTree
 import json
 
-from md5crypt import md5crypt
-from utils import *
+from resources.lib.md5crypt import md5crypt
+from resources.lib.utils import *
 
 class WebshareAPI:
     """

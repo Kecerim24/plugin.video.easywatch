@@ -140,13 +140,13 @@ class Listing:
             
             # Create URL with appropriate action based on item type
             if isinstance(item, Movie):
-                url = get_url(action='select_csfd', csfd_id=item.csfd_id, search_type='movie', items=self.items)
+                url = get_url(action='select_csfd', search_type='movie', items=self.items)
             elif isinstance(item, Series):
-                url = get_url(action='select_csfd', csfd_id=item.csfd_id, search_type='series', items=self.items)
+                url = get_url(action='select_csfd', search_type='series', items=self.items)
             elif isinstance(item, Season):
-                url = get_url(action='list_episodes', csfd_id=item.csfd_id, season_id=item.number, items=self.items)
+                url = get_url(action='list_episodes', episodes=item.episodes)
             elif isinstance(item, Episode):
-                url = get_url(action='list_search_results', query=f"{item.title} S{item.season_number}E{item.number}", items=self.items)
+                url = get_url(action='list_search_results', query=f"{item.title} S{item.season_number}E{item.number}")
             
             # Add the item to the directory
             xbmcplugin.addDirectoryItem(handle, url, list_item, isFolder=True)

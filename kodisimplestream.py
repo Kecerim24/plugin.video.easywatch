@@ -243,12 +243,9 @@ def play_video(path):
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
 # Handler Functions
-def handle_csfd_selection(csfd_id, search_type, items):
+def handle_csfd_selection(search_type, items):
     """
     Handle selection of a CSFD result and perform appropriate Webshare search.
-    
-    :param csfd_id: CSFD ID of selected item
-    :type csfd_id: str
     :param search_type: Type of search ('movie' or 'series')
     :type search_type: str
     """
