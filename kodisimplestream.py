@@ -227,6 +227,7 @@ def list_episodes(episodes):
     :param episodes: List of episodes
     :type episodes: list
     """
+    episodes = Season.from_dict(episodes).episodes
     listing = Listing(episodes)
     listing.list(get_url, _handle)
 
@@ -249,8 +250,8 @@ def handle_csfd_selection(search_type, item):
     :param search_type: Type of search ('movie' or 'series')
     :type search_type: str
     """
-    
     if search_type == 'movie':
+        item = Movie.from_dict(item)
         search_terms = []
         # For movies, search Webshare with title and year
         search_terms.append(f"{item.title} {item.year}")
@@ -258,6 +259,7 @@ def handle_csfd_selection(search_type, item):
             search_terms.append(item.original_title)
         list_search_results(search_terms)
     else:
+        item = Series.from_dict(item)
         # For series, show seasons
         list_seasons(item.seasons)
 
