@@ -82,13 +82,13 @@ def list_categories():
     xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
     
     # Add CSFD movie search button
-    search_url = get_url(action='search_movie')
+    search_url = get_url(action='search_movie_csfd')
     search_item = xbmcgui.ListItem(label=_addon.getLocalizedString(30012))  # "Search CSFD Movies"
     search_item.setArt({'icon': 'DefaultAddonsSearch.png'})
     xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
     
     # Add CSFD series search button
-    search_url = get_url(action='search_series')
+    search_url = get_url(action='search_series_csfd')
     search_item = xbmcgui.ListItem(label=_addon.getLocalizedString(30013))  # "Search CSFD Series"
     search_item.setArt({'icon': 'DefaultAddonsSearch.png'})
     xbmcplugin.addDirectoryItem(_handle, search_url, search_item, isFolder=True)
