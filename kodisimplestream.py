@@ -15,6 +15,7 @@ import xbmc
 
 from resources.lib.webshare import WebshareAPI
 from resources.lib.csfd import CSFD
+from resources.lib.utils import Movie, Series, Season, Episode, Listing
 
 _url = sys.argv[0]
 _handle = int(sys.argv[1])
@@ -91,9 +92,6 @@ def list_categories():
     
     xbmcplugin.endOfDirectory(_handle)
 
-def list_videos(category):
-   pass
-
 def play_video(path):
     """
     Play a video by the provided path.
@@ -105,7 +103,6 @@ def play_video(path):
     play_item = xbmcgui.ListItem(path=path)
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
-
 
 def list_search_results(search_terms: list[str]):
     """
@@ -120,9 +117,9 @@ def list_search_results(search_terms: list[str]):
         
     try:
         for search_term in search_terms:
-            results = api.search(search_term)['response']
+            results = api.search(search_term)
             
-            if results['total'] == 0:
+            if results.is_empty():
                 xbmcgui.Dialog().notification(
                     _addon.getAddonInfo('name'),
                     _addon.getLocalizedString(30007).format(_addon.getLocalizedString(30008)),
@@ -130,42 +127,9 @@ def list_search_results(search_terms: list[str]):
                     5000
                 )
                 continue
-            # Add each result to the directory
-            for result in results['file']:
-                # Create a list item with the video title
-                list_item = xbmcgui.ListItem(label=result['name'])
-                
-                # Set additional info for the list item using InfoTagVideo
-                list_item.setInfo('video', {
-                    'title': result.get('name', search_term),
-                    'size': result.get('size', 0)
-                })
-                            
-                # Set art (poster, fanart, etc.)
-                list_item.setArt({
-                    'poster': result.get('img', ''),
-                    'fanart': result.get('img', '')
-                })
-                
-                # Set the video URL
-                url = get_url(action='play', video=api.get_download_link(result['ident']))
-                if not url:
-                    continue
-                
-                # Set the item as playable
-                list_item.setProperty('IsPlayable', 'true')
-                
-                # Add the item to the directory
-                xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=False)
-        
-        # Add a sort method for the virtual folder items
-        xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_NONE)
-        
-        # Set content type to videos
-        xbmcplugin.setContent(_handle, 'videos')
-        
-        # Finish creating a virtual folder
-        xbmcplugin.endOfDirectory(_handle)
+            
+            results.list_videos(get_url, _handle, api)
+            
     except Exception as e:
         xbmcgui.Dialog().notification(
             _addon.getAddonInfo('name'),
@@ -174,61 +138,23 @@ def list_search_results(search_terms: list[str]):
             5000
         )
 
-def search():
+def search_webshare():
     """
-    Create a search dialog and handle the search request.
+    Create a search dialog for direct Webshare search.
     """
-    # Create a keyboard dialog
     keyboard = xbmc.Keyboard('', _addon.getLocalizedString(30001))
     keyboard.doModal()
     
     if keyboard.isConfirmed():
         search_term = keyboard.getText()
         if search_term:
-            # Show searching notification
             xbmcgui.Dialog().notification(
                 _addon.getAddonInfo('name'),
                 _addon.getLocalizedString(30002).format(search_term),
                 xbmcgui.NOTIFICATION_INFO,
                 2000
             )
-            # Display search results
-            list_search_results(search_term)
-
-def list_csfd_results(results, search_type):
-    """
-    Display CSFD search results and handle selection.
-    
-    :param results: List of CSFD search results
-    :type results: list
-    :param search_type: Type of search ('movie' or 'series')
-    :type search_type: str
-    """
-    for result in results:
-        # Create a list item with the video title
-        list_item = xbmcgui.ListItem(label=f"{result['title']} ({result.get('year')})")
-        
-        # Set additional info for the list item
-        list_item.setInfo('video', {
-            'title': result['title'],
-            'year': result.get('year'),
-            'plot': result.get('plot'),
-            'rating': result.get('rating')
-        })
-        
-        # Set art
-        list_item.setArt({
-            'poster': result.get('poster', ''),
-            'fanart': result.get('poster', '')
-        })
-        
-        # Create URL with CSFD ID and type
-        url = get_url(action='select_csfd', csfd_id=result['id'], search_type=search_type)
-        
-        # Add the item to the directory
-        xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
-    
-    xbmcplugin.endOfDirectory(_handle)
+            list_search_results([search_term])
 
 def handle_csfd_selection(csfd_id, search_type):
     """
@@ -265,15 +191,17 @@ def list_seasons(seasons, series_title, original_title, csfd_id):
     :param csfd_id: CSFD ID of the series
     :type csfd_id: str
     """
-    for season in seasons:
-        if season['title'] == 'Season':
-            list_item = xbmcgui.ListItem(label=f"Season {season['number']}")
-        else:
-            list_item = xbmcgui.ListItem(label=season['title'])
-        url = get_url(action='list_episodes', csfd_id=csfd_id, season_id=season['id'], series_title=series_title, original_title=original_title)
-        xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
+    listing = Listing()
     
-    xbmcplugin.endOfDirectory(_handle)
+    for season in seasons:
+        season_obj = Season(
+            number=season['number'],
+            title=season['title'],
+            year=season['year']
+        )
+        listing.add_item(season_obj)
+    
+    listing.list(get_url, _handle)
 
 def list_episodes(csfd_id, season_id, series_title, original_title):
     """
@@ -291,33 +219,17 @@ def list_episodes(csfd_id, season_id, series_title, original_title):
     csfd = CSFD()
     episodes = csfd.get_episodes(csfd_id, season_id)
     
+    listing = Listing()
+    
     for episode in episodes:
-        query = [f"{series_title} S{episode['season']}E{episode['number']}"]
-        if original_title and original_title != series_title:
-            query.append(f"{original_title} S{episode['season']}E{episode['number']}")
-        list_item = xbmcgui.ListItem(label=f"{episode['number']}. {episode['title']}")
-        url = get_url(action='list_search_results', query=query)
-        xbmcplugin.addDirectoryItem(_handle, url, list_item, isFolder=True)
+        episode_obj = Episode(
+            title=episode['title'],
+            number=episode['number'],
+            season=episode['season']
+        )
+        listing.add_item(episode_obj)
     
-    xbmcplugin.endOfDirectory(_handle)
-
-def search_webshare():
-    """
-    Create a search dialog for direct Webshare search.
-    """
-    keyboard = xbmc.Keyboard('', _addon.getLocalizedString(30001))
-    keyboard.doModal()
-    
-    if keyboard.isConfirmed():
-        search_term = keyboard.getText()
-        if search_term:
-            xbmcgui.Dialog().notification(
-                _addon.getAddonInfo('name'),
-                _addon.getLocalizedString(30002).format(search_term),
-                xbmcgui.NOTIFICATION_INFO,
-                2000
-            )
-            list_search_results(search_term)
+    listing.list(get_url, _handle)
 
 def search_csfd_movie():
     """
@@ -337,7 +249,20 @@ def search_csfd_movie():
             )
             csfd = CSFD()
             results = csfd.search(search_term, type="movie")
-            list_csfd_results(results, 'movie')
+            
+            listing = Listing()
+            for result in results:
+                movie = Movie(
+                    title=result['title'],
+                    year=result['year'],
+                    plot=result['plot'],
+                    rating=result['rating'],
+                    poster=result['poster'],
+                    fanart=result['poster']
+                )
+                listing.add_item(movie)
+            
+            listing.list(get_url, _handle)
 
 def search_csfd_series():
     """
@@ -357,7 +282,20 @@ def search_csfd_series():
             )
             csfd = CSFD()
             results = csfd.search(search_term, type="series")
-            list_csfd_results(results, 'series')
+            
+            listing = Listing()
+            for result in results:
+                series = Series(
+                    title=result['title'],
+                    year=result['year'],
+                    plot=result['plot'],
+                    rating=result['rating'],
+                    poster=result['poster'],
+                    fanart=result['poster']
+                )
+                listing.add_item(series)
+            
+            listing.list(get_url, _handle)
 
 def router(paramstring):
     """
@@ -370,9 +308,7 @@ def router(paramstring):
     params = dict(parse_qsl(paramstring))
     
     if params:
-        if params['action'] == 'listing':
-            list_videos(params['category'])
-        elif params['action'] == 'play':
+        if params['action'] == 'play':
             play_video(params['video'])
         elif params['action'] == 'search_webshare':
             search_webshare()
@@ -390,7 +326,6 @@ def router(paramstring):
             raise ValueError('Invalid paramstring: {0}!'.format(paramstring))
     else:
         list_categories()
-
 
 if __name__ == '__main__':
     # Call the router function and pass the plugin call parameters to it.

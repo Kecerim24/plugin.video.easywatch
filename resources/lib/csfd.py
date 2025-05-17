@@ -2,8 +2,9 @@ import requests
 import random
 import json
 import re
-from typing import Literal, Dict, List
+from typing import Literal, List
 from bs4 import BeautifulSoup
+from resources.lib.utils import Movie, Series, Season, Episode
 
 class CSFD:
     """
@@ -18,7 +19,7 @@ class CSFD:
     def __init__(self):
         self.base_url = "https://www.csfd.cz/"
         
-    def get_detail(self, full_id):
+    def get_detail(self, full_id) -> Movie | Series:
         url = f"{self.base_url}/film/{full_id}/prehled"
         headers = {
             "User-Agent":random.choice(self.USER_AGENTS)
@@ -63,13 +64,6 @@ class CSFD:
         if rating_elem:
             rating = rating_elem.text.strip()
 
-        # Extract genres
-        genres = []
-        genres_elem = soup.find('div', {'class': 'genres'})
-        if genres_elem:
-            genre_links = genres_elem.find_all('a')
-            genres = [g.text.strip() for g in genre_links]
-
         # Extract original title if not Czech
         original_title = None
         if origin_elem and 'Česko' not in origin_elem.text:
@@ -78,17 +72,30 @@ class CSFD:
                 first_name = film_names.find('li')
                 if first_name:
                     original_title = first_name.text.strip()
-        return {
-            'title': title,
-            'original_title': original_title,
-            'year': year,
-            'rating': rating,
-            'genres': genres,
-            'plot': plot,
-            'poster': poster
-        }
 
-    def search(self, query, type: Literal["movie", "series"] = "movie") -> List[Dict]:
+        # Check if it's a series
+        is_series = 'seriál' in soup.text or 'epizoda' in soup.text
+
+        if is_series:
+            return Series(
+                title=title,
+                year=year,
+                plot=plot,
+                rating=rating,
+                poster=poster,
+                fanart=poster
+            )
+        else:
+            return Movie(
+                title=title,
+                year=year,
+                plot=plot,
+                rating=rating,
+                poster=poster,
+                fanart=poster
+            )
+
+    def search(self, query, type: Literal["movie", "series"] = "movie") -> List[Movie | Series]:
         url = f"{self.base_url}/hledat/?q={query}"
         headers = {
             "User-Agent": random.choice(self.USER_AGENTS)
@@ -126,24 +133,22 @@ class CSFD:
             if full_id:
                 try:
                     # Get full details for each result
-                    details = self.get_detail(full_id)
-                    details['id'] = full_id
-                    details['type'] = type
-                    results.append(details)
+                    result = self.get_detail(full_id)
+                    results.append(result)
                 except Exception as e:
                     print(f"Failed to get details for {full_id}: {str(e)}")
                     continue
         
         return results
     
-    def get_seasons(self, full_id):
+    def get_seasons(self, full_id) -> List[Season]:
         """
         Get list of seasons for a series.
         
         :param full_id: CSFD ID of the series
         :type full_id: str
         :return: List of seasons with their details
-        :rtype: list
+        :rtype: list[Season]
         """
         url = f"{self.base_url}/film/{full_id}/prehled"
         headers = {
@@ -170,7 +175,7 @@ class CSFD:
                 try:
                     season_number = int(season_title.split()[-1])
                 except ValueError:
-                    season_number = seasons[-1]['number'] + 1
+                    season_number = len(seasons) + 1
                 
                 # Get season ID from href
                 href = title_elem.get('href', '')
@@ -192,19 +197,18 @@ class CSFD:
                     if episode_match:
                         episode_count = int(episode_match.group(1))
                 
-                seasons.append({
-                    'id': season_id,
-                    'number': season_number,
-                    'title': season_title,
-                    'year': year,
-                    'episode_count': episode_count
-                })
+                seasons.append(Season(
+                    csfd_id=full_id,
+                    number=season_number,
+                    title=season_title,
+                    year=year
+                ))
         
         # Sort seasons by number
-        seasons.sort(key=lambda x: x['number'])
+        seasons.sort(key=lambda x: x.number)
         return seasons
 
-    def get_episodes(self, full_id, season_id):
+    def get_episodes(self, full_id, season_id) -> List[Episode]:
         """
         Get list of episodes for a season.
         
@@ -213,7 +217,7 @@ class CSFD:
         :param season_id: Season ID
         :type season_id: str
         :return: List of episodes with their details
-        :rtype: list
+        :rtype: list[Episode]
         """
         url = f"{self.base_url}/film/{full_id}/{season_id}/prehled"
         headers = {
@@ -255,15 +259,15 @@ class CSFD:
                             season_number = int(match.group(1))
                             episode_number = int(match.group(2))
                 
-                episodes.append({
-                    'id': episode_id,
-                    'title': episode_title,
-                    'season': season_number,
-                    'number': episode_number
-                })
+                episodes.append(Episode(
+                    csfd_id=episode_id,
+                    title=episode_title,
+                    number=episode_number,
+                    season_number=season_number
+                ))
         
         # Sort episodes by number
-        episodes.sort(key=lambda x: x['number'])
+        episodes.sort(key=lambda x: x.number)
         return episodes
 
 if __name__ == "__main__":
