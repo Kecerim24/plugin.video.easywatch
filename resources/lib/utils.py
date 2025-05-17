@@ -1,5 +1,6 @@
 import xbmcgui
 import xbmcplugin
+from typing import Union, List
 
 class Video:
     def __init__(self, title: str, path: str = '', poster: str = '', fanart: str = '', size: int = 0, webshare_id: str = ''):
@@ -149,8 +150,8 @@ class Listing:
         
         xbmcplugin.endOfDirectory(handle)
 
-    def add_item(self, item: Movie | Series | Season | Episode) -> None:
+    def add_item(self, item: Union[Movie, Series, Season, Episode]) -> None:
         self.items.append(item)
 
-    def add_items(self, items: list[Movie | Series | Season | Episode]) -> None:
+    def add_items(self, items: List[Union[Movie, Series, Season, Episode]]) -> None:
         self.items.extend(items)
