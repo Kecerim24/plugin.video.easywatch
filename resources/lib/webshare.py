@@ -2,10 +2,9 @@ import requests
 import hashlib
 import xmltodict
 from xml.etree import ElementTree
-import json
 
 from resources.lib.md5crypt import md5crypt
-from resources.lib.utils import *
+from resources.lib.utils import Video, VideoList
 
 class WebshareAPI:
     """
@@ -62,7 +61,7 @@ class WebshareAPI:
         root = ElementTree.fromstring(response.content)
         return root.find('link').text if root.find('link') is not None else ''
     
-    def search(self, query: str, limit: int = 7, offset: int = 0, sort: str = 'largest', category: str = 'video') -> VideoList:
+    def search(self, query: str, limit: int = 7, offset: int = 0, sort: str = '', category: str = 'video') -> VideoList:
         """Search for videos on webshare.cz
         query: str - search query
         limit: int - number of results to return

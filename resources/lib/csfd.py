@@ -1,6 +1,5 @@
 import requests
 import random
-import json
 import re
 from typing import Literal, List
 from bs4 import BeautifulSoup
@@ -78,6 +77,7 @@ class CSFD:
 
         if is_series:
             return Series(
+                csfd_id=full_id,
                 title=title,
                 original_title=original_title,
                 year=year,
@@ -88,6 +88,7 @@ class CSFD:
             )
         else:
             return Movie(
+                csfd_id=full_id,
                 title=title,
                 original_title=original_title,
                 year=year,
@@ -283,4 +284,4 @@ class CSFD:
 
 if __name__ == "__main__":
     csfd = CSFD()
-    print(json.dumps(csfd.search("akta x", type="movie"), indent=2, ensure_ascii=False))
+    print(csfd.search("andor", type="series"))
