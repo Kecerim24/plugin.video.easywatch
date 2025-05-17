@@ -282,7 +282,7 @@ def router(paramstring):
         elif params['action'] == 'search_csfd_series':
             search_csfd_series()   
         elif params['action'] == 'select_csfd':
-            handle_csfd_selection(params['csfd_id'], params['search_type'], params['items'])
+            handle_csfd_selection(params['search_type'], params['items'])
         elif params['action'] == 'list_episodes':
             list_episodes(params['episodes'])
         elif params['action'] == 'list_search_results':
