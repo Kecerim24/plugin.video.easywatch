@@ -2,9 +2,9 @@ import requests
 import hashlib
 import xmltodict
 from xml.etree import ElementTree
+import json
 
 from resources.lib.md5crypt import md5crypt
-from resources.lib.utils import Video, VideoList
 
 class WebshareAPI:
     """
@@ -61,7 +61,7 @@ class WebshareAPI:
         root = ElementTree.fromstring(response.content)
         return root.find('link').text if root.find('link') is not None else ''
     
-    def search(self, query: str, limit: int = 7, offset: int = 0, sort: str = '', category: str = 'video') -> VideoList:
+    def search(self, query: str, limit: int = 30, offset: int = 0, sort: str = 'rating', category: str = 'video'):
         """Search for videos on webshare.cz
         query: str - search query
         limit: int - number of results to return
@@ -80,18 +80,15 @@ class WebshareAPI:
             json_response = xmltodict.parse(response.content)
             if not json_response or 'response' not in json_response:
                 raise Exception("Invalid response format from server")
+            return json_response
         except Exception as e:
             raise Exception(f"Failed to parse search response: {str(e)}")
         
-        video_list = VideoList()
-        
-        for file in json_response['response']['file']:
-            video = Video(file['name'], '', file['img'],file['img'], file['size'], file['ident'])
-            video_list.add_video(video)
-        return video_list
          
 if __name__ == "__main__":
     # For testing purposes
     webshare = WebshareAPI()
     webshare.login("test", "test")
-    webshare.search("Cars", 5)
+    json_search = webshare.search("iron", 5)
+    print(json.dumps(json_search, indent=4))
+    print(webshare.get_download_link(json_search['response']['file'][0]['ident']))
