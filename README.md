@@ -44,7 +44,7 @@ KodiSimpleStream je jednoduchý Kodi plugin, který umí vyhledávat a přehráv
 
 ### Podpora
 Pokud narazíte na problémy nebo máte otázky:
-- Prohlédněte si [Issues](https://github.com/kecerim/plugin.video.kodisimplestream/issues)
+- Prohlédněte si [Issues](https://github.com/Kecerim24/plugin.video.kodisimplestream/issues)
 - Vytvořte nový problém, pokud váš problém ještě nebyl nahlášen
 
 Máte-li nápad na vylepšení doplňku, neváhejte ho sdílet v sekci Issues nebo rovnou přispět vlastním kódem prostřednictvím Pull requestu (pomoc bych velmi ocenil, jelikož to je můj první addon pro Kodi). Veškeré návrhy na zlepšení jsou vítány!
