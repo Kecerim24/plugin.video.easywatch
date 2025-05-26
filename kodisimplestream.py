@@ -386,12 +386,17 @@ def show_stream_selection(streams: Dict[str, str]) -> None:
         options.append(quality)
         
     # Show selection dialog
-    selected = xbmcgui.Dialog().select(_addon.getLocalizedString(30021), options)  # "Select stream quality"
-    if selected >= 0:
-        quality = options[selected]
+    # Create directory items for each stream quality
+    for quality in options:
         url = streams[quality]
-        xbmc.log(f"Selected stream: {quality} | {url}", xbmc.LOGINFO)
-        play_video(url)
+        item = xbmcgui.ListItem(label=quality)
+        item.setProperty("IsPlayable", "true")
+        xbmc.log(f"Adding stream: {quality} | {url}", xbmc.LOGINFO)
+        xbmcplugin.addDirectoryItem(_handle, get_url(action="play", video=url), item, isFolder=False)
+
+    xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_NONE)
+    xbmcplugin.setContent(_handle, "videos")
+    xbmcplugin.endOfDirectory(_handle)
 
 # ----------------------------------------------------------------------------
 # Placeholder for unimplemented features
