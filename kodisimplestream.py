@@ -9,7 +9,7 @@ from __future__ import annotations  # Enables forward references in older Python
 # Kodi plugin boilerplate and plugin-specific modules
 import ast
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import parse_qsl, urlencode
 
 import xbmc
@@ -19,7 +19,7 @@ import xbmcplugin
 
 from resources.lib.webshare import WebshareAPI
 from resources.lib.csfd import CSFD
-
+from resources.lib.fedapi import FedAPI
 # ----------------------------------------------------------------------------
 # Global variables – provided by Kodi during plugin initialization
 # ----------------------------------------------------------------------------
@@ -83,6 +83,7 @@ def list_categories() -> None:
         ("search_webshare", 30011),
         ("search_csfd_movie", 30012),
         ("search_csfd_series", 30013),
+        ("search_imdb_fedapi", 30016),
     ):
         item = xbmcgui.ListItem(label=_addon.getLocalizedString(label_id))
         item.setArt({"icon": "DefaultAddonsSearch.png"})
@@ -297,6 +298,99 @@ def search_csfd_series() -> None:
         )
         results = CSFD().search(term, type="series")
         list_csfd_results(results, "series")
+        
+# ----------------------------------------------------------------------------
+# IMDB – search entry point
+# ----------------------------------------------------------------------------
+
+def search_imdb_fedapi() -> None:
+    """Search dialog for IMDB titles."""
+    term = _keyboard_search(30017)
+    if term:
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo("name"),
+            _addon.getLocalizedString(30002).format(term),
+            xbmcgui.NOTIFICATION_INFO,
+            2000,
+        )
+        results = FedAPI().search_imdb(term)
+        list_imdb_results(results)
+        
+# ----------------------------------------------------------------------------
+# IMDB – results listing and navigation
+# ----------------------------------------------------------------------------
+
+def list_imdb_results(results: List[Tuple[str, str, str, str]]) -> None:
+    """Displays IMDB search results as Kodi menu items."""
+    for result in results:
+        imdb_id, title, year, type_ = result
+        label = f"{title} ({year}) | {type_}" if year else f"{title} | {type_}"
+        
+        item = xbmcgui.ListItem(label=label)
+        item.setInfo("video", {
+            "title": title,
+            "year": year,
+        })
+        
+        # Store the type in the item's properties
+        item.setProperty("type", type_)
+                
+        url = get_url(action="select_imdb", imdb_id=imdb_id, type=type_)
+        xbmcplugin.addDirectoryItem(_handle, url, item, isFolder=True)
+        
+    xbmcplugin.endOfDirectory(_handle)
+
+def handle_imdb_selection(imdb_id: str, type_: str) -> None:
+    """Handles selection of an IMDB result and shows appropriate stream options."""
+    try:
+        fedapi = FedAPI()
+        
+        if type_ == "movie":
+            streams = fedapi.get_movie_streams(imdb_id)
+            show_stream_selection(streams)
+        else:  # TV series
+            # Show season/episode selection dialog
+            season = xbmcgui.Dialog().numeric(0, _addon.getLocalizedString(30018), "1")  # "Enter season number"
+            if not season:
+                return
+                
+            episode = xbmcgui.Dialog().numeric(0, _addon.getLocalizedString(30019), "1")  # "Enter episode number"
+            if not episode:
+                return
+                
+            streams = fedapi.get_series_streams(imdb_id, int(season), int(episode))
+            show_stream_selection(streams)
+            
+    except Exception as exc:
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo("name"),
+            str(exc),
+            xbmcgui.NOTIFICATION_ERROR,
+            5000,
+        )
+
+def show_stream_selection(streams: Dict[str, str]) -> None:
+    """Shows a dialog with available stream options."""
+    if not streams:
+        xbmcgui.Dialog().notification(
+            _addon.getAddonInfo("name"),
+            _addon.getLocalizedString(30020),  # "No streams available"
+            xbmcgui.NOTIFICATION_ERROR,
+            5000,
+        )
+        return
+        
+    # Create list of stream options
+    options = []
+    for quality, url in streams.items():
+        options.append(quality)
+        
+    # Show selection dialog
+    selected = xbmcgui.Dialog().select(_addon.getLocalizedString(30021), options)  # "Select stream quality"
+    if selected >= 0:
+        quality = options[selected]
+        url = streams[quality]
+        play_video(url)
 
 # ----------------------------------------------------------------------------
 # Placeholder for unimplemented features
@@ -352,6 +446,10 @@ def router(paramstring: str) -> None:
         except (ValueError, SyntaxError):
             query_list = [raw_query]
         list_search_results([str(q) for q in query_list])
+    elif action == "search_imdb_fedapi":
+        search_imdb_fedapi()
+    elif action == "select_imdb":
+        handle_imdb_selection(params["imdb_id"], params["type"])
     else:
         raise ValueError(f"Invalid paramstring: {paramstring}!")
 

@@ -1,8 +1,9 @@
 import requests
 import random
 import json
+import xbmcaddon
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 class FedAPI:
     """
@@ -17,7 +18,7 @@ class FedAPI:
     
     Video tutorial: https://vimeo.com/1059834885/c3ab398d42
     """
-    def __init__(self, ui_token: str):
+    def __init__(self):
         self.url = "https://fed-api-europe.pstream.org"
         self.USER_AGENTS = [
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36',
@@ -25,9 +26,14 @@ class FedAPI:
             'Mozilla/5.0 (Linux; Android 10; SM-A205U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.101 Mobile Safari/537.36',
             'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.101 Mobile Safari/537.36']
         
+        addon = xbmcaddon.Addon()
+        ui_token = addon.getSetting("ui_token")
+        if not ui_token:
+            raise Exception("UI token not set in addon settings")
+            
         self.headers = {
             "User-Agent": random.choice(self.USER_AGENTS),
-            "ui-token": ui_token,
+            "ui-token": ui_token.strip(),
             "Origin": "https://pstream.org"
         }
 
@@ -59,7 +65,7 @@ class FedAPI:
         if response.status_code != 200:
             raise Exception(f"Failed to search for {query}")
         
-        response_list = json.loads(response.text[6+len(query):-1])['d']
+        response_list = json.loads(response.text[response.text.find('{'):-1])['d']
         
         if len(response_list) == 0:
             raise Exception(f"No results found for {query}")
@@ -71,7 +77,7 @@ class FedAPI:
         return results
             
 if __name__ == "__main__":
-    fedapi = FedAPI("eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NDgyMDc0NTQsIm5iZiI6MTc0ODIwNzQ1NCwiZXhwIjoxNzc5MzExNDc0LCJkYXRhIjp7InVpZCI6Nzg2NDMxLCJ0b2tlbiI6ImZlZTFmODA5YmFmZDEzZmRlOThjZjFmNGVjZGMwMzAwIn19.bAd0w-petHEmYX6oPcVg1tZRUK8YN61rnxR-4HCiMaE")
+    fedapi = FedAPI()
     #print(fedapi.get_movie_streams("tt15239678").get("ORG"))
     #print(fedapi.get_series_streams("tt9253284", 2, 9).get("ORG"))
-    print(fedapi.search_imdb("star wars"))
+    print(fedapi.search_imdb("Star Wars: Epizode 2"))

@@ -67,3 +67,35 @@ msgstr "Zadejte název filmu pro vyhledání na CSFD"
 msgctxt "#30015"
 msgid "Enter series title to search on CSFD"
 msgstr "Zadejte název seriálu pro vyhledání na CSFD" 
+
+msgctxt "#30016"
+msgid "Search IMDB and play from Fed API"
+msgstr "Hledat na IMDB a přehrát z Fed API"
+
+msgctxt "#30017"
+msgid "Enter title to search on IMDB"
+msgstr "Zadejte název pro vyhledání na IMDB"
+
+msgctxt "#30018"
+msgid "Enter season number"
+msgstr "Zadejte číslo sezóny"
+
+msgctxt "#30019"
+msgid "Enter episode number"
+msgstr "Zadejte číslo epizody"
+
+msgctxt "#30020"
+msgid "No streams available"
+msgstr "Žádné streamy k dispozici"
+
+msgctxt "#30021"
+msgid "Select stream quality"
+msgstr "Vyberte kvalitu streamu"
+
+msgctxt "#30022"
+msgid "Fed API Settings"
+msgstr "Nastavení Fed API"
+
+msgctxt "#30023"
+msgid "UI Token"
+msgstr "UI Token"

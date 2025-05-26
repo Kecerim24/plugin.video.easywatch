@@ -67,3 +67,35 @@ msgstr "Enter movie title to search on CSFD"
 msgctxt "#30015"
 msgid "Enter series title to search on CSFD"
 msgstr "Enter series title to search on CSFD" 
+
+msgctxt "#30016"
+msgid "Search IMDB and play from Fed API"
+msgstr "Hledat na IMDB a přehrát z Fed API"
+
+msgctxt "#30017"
+msgid "Enter title to search on IMDB"
+msgstr "Enter title to search on IMDB"
+
+msgctxt "#30018"
+msgid "Enter season number"
+msgstr "Enter season number"
+
+msgctxt "#30019"
+msgid "Enter episode number"
+msgstr "Enter episode number"
+
+msgctxt "#30020"
+msgid "No streams available"
+msgstr "No streams available"
+
+msgctxt "#30021"
+msgid "Select stream quality"
+msgstr "Select stream quality"
+
+msgctxt "#30022"
+msgid "Fed API Settings"
+msgstr "Fed API Settings"
+
+msgctxt "#30023"
+msgid "UI Token"
+msgstr "UI Token"

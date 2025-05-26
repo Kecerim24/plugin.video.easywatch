@@ -4,4 +4,7 @@
         <setting label="30003" type="text" id="username" default="" />
         <setting label="30004" type="text" id="password" option="hidden" default="" />
     </category>
+    <category label="30022">
+        <setting label="30023" type="text" id="ui_token" default="" />
+    </category>
 </settings>
