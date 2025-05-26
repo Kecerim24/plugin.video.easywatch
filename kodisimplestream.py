@@ -390,7 +390,7 @@ def show_stream_selection(streams: Dict[str, str]) -> None:
     if selected >= 0:
         quality = options[selected]
         url = streams[quality]
-        print(f"Selected stream: {quality} | {url}")
+        xbmc.log(f"Selected stream: {quality} | {url}", xbmc.LOGINFO)
         play_video(url)
 
 # ----------------------------------------------------------------------------
