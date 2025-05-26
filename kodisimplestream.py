@@ -390,9 +390,8 @@ def show_stream_selection(streams: Dict[str, str]) -> None:
     if selected >= 0:
         quality = options[selected]
         url = streams[quality]
-        item = xbmcgui.ListItem(path=url)
-        item.setProperty('IsPlayable', 'true')
-        xbmcplugin.setResolvedUrl(_handle, True, item)
+        print(f"Selected stream: {quality} | {url}")
+        play_video(url)
 
 # ----------------------------------------------------------------------------
 # Placeholder for unimplemented features
