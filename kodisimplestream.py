@@ -335,12 +335,12 @@ def list_imdb_results(results: List[Tuple[str, str, str, str]]) -> None:
         # Store the type in the item's properties
         item.setProperty("type", type_)
                 
-        url = get_url(action="select_imdb", imdb_id=imdb_id, type=type_)
+        url = get_url(action="select_imdb", imdb_id=imdb_id,title=title, type=type_)
         xbmcplugin.addDirectoryItem(_handle, url, item, isFolder=True)
         
     xbmcplugin.endOfDirectory(_handle)
 
-def handle_imdb_selection(imdb_id: str, type_: str) -> None:
+def handle_imdb_selection(imdb_id: str, title: str, type_: str) -> None:
     """Handles selection of an IMDB result and shows appropriate stream options."""
     try:
         fedapi = FedAPI()
@@ -349,7 +349,7 @@ def handle_imdb_selection(imdb_id: str, type_: str) -> None:
             result = fedapi.get_movie_streams(imdb_id)
             streams = result.get("streams", {})
             subtitles = result.get("subtitles", {})
-            show_stream_selection(streams, subtitles)
+            show_stream_selection(streams, subtitles, title)
         else:  # TV series
             # Show season/episode selection dialog
             season = xbmcgui.Dialog().numeric(0, _addon.getLocalizedString(30018), "1")  # "Enter season number"
@@ -363,7 +363,7 @@ def handle_imdb_selection(imdb_id: str, type_: str) -> None:
             result = fedapi.get_series_streams(imdb_id, int(season), int(episode))
             streams = result.get("streams", {})
             subtitles = result.get("subtitles", {})
-            show_stream_selection(streams, subtitles)
+            show_stream_selection(streams, subtitles, title + f" S{season}E{episode}")
             
     except Exception as exc:
         xbmcgui.Dialog().notification(
@@ -373,7 +373,7 @@ def handle_imdb_selection(imdb_id: str, type_: str) -> None:
             5000,
         )
 
-def show_stream_selection(streams: Dict[str, str], subtitles: Dict[str, Dict] = None) -> None:
+def show_stream_selection(streams: Dict[str, str], subtitles: Dict[str, Dict] = None, title: str = None) -> None:
     """Shows a dialog with available stream and subtitle options."""
     if not streams:
         xbmcgui.Dialog().notification(
@@ -393,15 +393,18 @@ def show_stream_selection(streams: Dict[str, str], subtitles: Dict[str, Dict] = 
     # Create directory items for each stream quality
     for quality in options:
         url = streams[quality]
-        item = xbmcgui.ListItem(label=quality)
+        item = xbmcgui.ListItem(label=f"{title} | {quality}")
+        item.setSubtitles
         item.setProperty("IsPlayable", "true")
         # Add subtitle info to the item if available
         if subtitles:
             subtitle_list = []
+            lang_list =[]
             for lang, sub in subtitles.items():
-                subtitle_list.append(f"{lang}: {sub.get('subtitle_name', '')}")
+                subtitle_list.append(sub.get("subtitle_link"))
+                lang_list.append(lang)
             if subtitle_list:
-                item.setInfo("video", {"subtitles": ", ".join(subtitle_list)})
+                item.setSubtitles(subtitle_list)
         xbmc.log(f"Adding stream: {quality} | {url}", xbmc.LOGINFO)
         xbmcplugin.addDirectoryItem(_handle, get_url(action="play", video=url), item, isFolder=False)
 
@@ -466,7 +469,7 @@ def router(paramstring: str) -> None:
     elif action == "search_imdb_fedapi":
         search_imdb_fedapi()
     elif action == "select_imdb":
-        handle_imdb_selection(params["imdb_id"], params["type"])
+        handle_imdb_selection(params["imdb_id"], params["title"], params["type"])
     else:
         raise ValueError(f"Invalid paramstring: {paramstring}!")
 
