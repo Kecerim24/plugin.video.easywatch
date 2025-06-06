@@ -96,7 +96,7 @@ def list_categories() -> None:
 # ----------------------------------------------------------------------------
 
 def play_video(path: str) -> None:
-    """Passes the video URL to Kodi’s internal player."""
+    """Passes the video URL to Kodi's internal player."""
     xbmcplugin.setResolvedUrl(_handle, True, xbmcgui.ListItem(path=path))
 
 # ----------------------------------------------------------------------------
@@ -155,7 +155,7 @@ def list_search_results(search_terms: List[str]) -> None:
 # ----------------------------------------------------------------------------
 
 def _keyboard_search(label_id: int) -> Optional[str]:
-    """Displays Kodi’s virtual keyboard and returns input text if confirmed."""
+    """Displays Kodi's virtual keyboard and returns input text if confirmed."""
     keyboard = xbmc.Keyboard("", _addon.getLocalizedString(label_id))
     keyboard.doModal()
     return keyboard.getText() if keyboard.isConfirmed() else None
@@ -346,8 +346,10 @@ def handle_imdb_selection(imdb_id: str, type_: str) -> None:
         fedapi = FedAPI()
         
         if type_ == "movie":
-            streams = fedapi.get_movie_streams(imdb_id)
-            show_stream_selection(streams)
+            result = fedapi.get_movie_streams(imdb_id)
+            streams = result.get("streams", {})
+            subtitles = result.get("subtitles", {})
+            show_stream_selection(streams, subtitles)
         else:  # TV series
             # Show season/episode selection dialog
             season = xbmcgui.Dialog().numeric(0, _addon.getLocalizedString(30018), "1")  # "Enter season number"
@@ -358,8 +360,10 @@ def handle_imdb_selection(imdb_id: str, type_: str) -> None:
             if not episode:
                 return
                 
-            streams = fedapi.get_series_streams(imdb_id, int(season), int(episode))
-            show_stream_selection(streams)
+            result = fedapi.get_series_streams(imdb_id, int(season), int(episode))
+            streams = result.get("streams", {})
+            subtitles = result.get("subtitles", {})
+            show_stream_selection(streams, subtitles)
             
     except Exception as exc:
         xbmcgui.Dialog().notification(
@@ -369,8 +373,8 @@ def handle_imdb_selection(imdb_id: str, type_: str) -> None:
             5000,
         )
 
-def show_stream_selection(streams: Dict[str, str]) -> None:
-    """Shows a dialog with available stream options."""
+def show_stream_selection(streams: Dict[str, str], subtitles: Dict[str, Dict] = None) -> None:
+    """Shows a dialog with available stream and subtitle options."""
     if not streams:
         xbmcgui.Dialog().notification(
             _addon.getAddonInfo("name"),
@@ -391,6 +395,13 @@ def show_stream_selection(streams: Dict[str, str]) -> None:
         url = streams[quality]
         item = xbmcgui.ListItem(label=quality)
         item.setProperty("IsPlayable", "true")
+        # Add subtitle info to the item if available
+        if subtitles:
+            subtitle_list = []
+            for lang, sub in subtitles.items():
+                subtitle_list.append(f"{lang}: {sub.get('subtitle_name', '')}")
+            if subtitle_list:
+                item.setInfo("video", {"subtitles": ", ".join(subtitle_list)})
         xbmc.log(f"Adding stream: {quality} | {url}", xbmc.LOGINFO)
         xbmcplugin.addDirectoryItem(_handle, get_url(action="play", video=url), item, isFolder=False)
 

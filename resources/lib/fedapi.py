@@ -37,25 +37,29 @@ class FedAPI:
             "Origin": "https://pstream.org"
         }
 
-    def get_movie_streams(self, imdb_id: str) -> Dict[str, str]:
+    def get_movie_streams(self, imdb_id: str) -> Dict[str, Dict]:
         url = f"{self.url}/movie/{imdb_id}"
         response = requests.get(url, headers=self.headers)
         if response.status_code != 200:
             raise Exception(f"Failed to get movie streams for {imdb_id}")
-        streams = response.json().get("streams", "")
+        data = response.json()
+        streams = data.get("streams", "")
+        subtitles = data.get("subtitles", {})
         if not streams:
             raise Exception(f"No streams found for {imdb_id}")
-        return streams
+        return {"streams": streams, "subtitles": subtitles}
     
-    def get_series_streams(self, imdb_id: str, season: int, episode: int) -> Dict[str, str]:
+    def get_series_streams(self, imdb_id: str, season: int, episode: int) -> Dict[str, Dict]:
         url = f"{self.url}/tv/{imdb_id}/{season}/{episode}"
         response = requests.get(url, headers=self.headers)
         if response.status_code != 200:
             raise Exception(f"Failed to get series streams for {imdb_id} {season} {episode}")
-        streams = response.json().get("streams", "")
+        data = response.json()
+        streams = data.get("streams", "")
+        subtitles = data.get("subtitles", {})
         if not streams:
             raise Exception(f"No streams found for {imdb_id} {season} {episode}")
-        return streams
+        return {"streams": streams, "subtitles": subtitles}
     
     def search_imdb(self, query: str) -> List[Tuple[str, str, str, str]]:
         query = query.strip()
@@ -78,6 +82,11 @@ class FedAPI:
             
 if __name__ == "__main__":
     fedapi = FedAPI()
-    #print(fedapi.get_movie_streams("tt15239678").get("ORG"))
-    #print(fedapi.get_series_streams("tt9253284", 2, 9).get("ORG"))
-    print(fedapi.search_imdb("Star Wars: Epizode 2"))
+    # Example usage for movie:
+    movie_result = fedapi.get_movie_streams("tt15239678")
+    print(movie_result["streams"].get("ORG"))
+    print(movie_result["subtitles"].get("English", {}).get("subtitle_link"))
+    # Example usage for series:
+    series_result = fedapi.get_series_streams("tt9253284", 2, 9)
+    print(series_result["streams"].get("ORG"))
+    print(series_result["subtitles"].get("English", {}).get("subtitle_link"))
