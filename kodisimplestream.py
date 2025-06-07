@@ -9,6 +9,9 @@ from __future__ import annotations  # Enables forward references in older Python
 # Kodi plugin boilerplate and plugin-specific modules
 import ast
 import sys
+import os
+import tempfile
+import requests
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import parse_qsl, urlencode
 
@@ -27,6 +30,29 @@ _url: str = sys.argv[0]
 _handle: int = int(sys.argv[1])
 _addon: xbmcaddon.Addon = xbmcaddon.Addon()
 _api: Optional[WebshareAPI] = None
+_temp_dir: str = os.path.join(tempfile.gettempdir(), "kodisimplestream")
+
+# Create temp directory if it doesn't exist
+if not os.path.exists(_temp_dir):
+    os.makedirs(_temp_dir)
+
+def download_subtitle(url: str, filename: str) -> str:
+    """Downloads a subtitle file to the temp directory and returns its path."""
+    try:
+        response = requests.get(url)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download subtitle: {response.status_code}")
+            
+        filepath = os.path.join(_temp_dir, filename)
+        
+        # Save the subtitle file
+        with open(filepath, 'wb') as f:
+            f.write(response.content)
+            
+        return filepath
+    except Exception as e:
+        xbmc.log(f"Failed to download subtitle: {str(e)}", xbmc.LOGERROR)
+        return None
 
 # ----------------------------------------------------------------------------
 # Utility functions
@@ -394,17 +420,24 @@ def show_stream_selection(streams: Dict[str, str], subtitles: Dict[str, Dict] = 
     for quality in options:
         url = streams[quality]
         item = xbmcgui.ListItem(label=f"{title} | {quality}")
-        item.setSubtitles
         item.setProperty("IsPlayable", "true")
-        # Add subtitle info to the item if available
+        
+        # Download and add subtitle info to the item if available
         if subtitles:
             subtitle_list = []
-            lang_list =[]
             for lang, sub in subtitles.items():
-                subtitle_list.append(sub.get("subtitle_link"))
-                lang_list.append(lang)
+                subtitle_url = sub.get("subtitle_link")
+                subtitle_name = sub.get("subtitle_name")
+                if subtitle_url:
+                    subtitle_path = download_subtitle(subtitle_url, subtitle_name)
+                    if subtitle_path:
+                        subtitle_list.append(subtitle_path)
+                        xbmc.log(f"Downloaded subtitle for {lang} to {subtitle_path}", xbmc.LOGINFO)
+            
             if subtitle_list:
                 item.setSubtitles(subtitle_list)
+                xbmc.log(f"Added {len(subtitle_list)} subtitles to stream", xbmc.LOGINFO)
+                
         xbmc.log(f"Adding stream: {quality} | {url}", xbmc.LOGINFO)
         xbmcplugin.addDirectoryItem(_handle, get_url(action="play", video=url), item, isFolder=False)
 
