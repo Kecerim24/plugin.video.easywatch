@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.video.kodisimplestream"
-version="0.5.1-dev6"
+version="0.5.1-dev7"
 name="kodisimplestream"
 provider-name="kecerim">
 <requires>

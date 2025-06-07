@@ -77,7 +77,7 @@ class FedAPI:
         
         for result in response_list:
             if result['id'].startswith("tt"):
-                results.append((result['id'], result['l'], str(result['y']), result.get('qid', '')))
+                results.append((result['id'], result.get('l', ''), str(result.get('y', '')), result.get('qid', '')))
         return results
             
 if __name__ == "__main__":
